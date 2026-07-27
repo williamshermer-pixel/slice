@@ -1,0 +1,78 @@
+FORENSICS on duty — attacking anything the swarm surfaces
+loading 18 fresh tiles the swarm never used …
+  14 fresh tiles ready (153s)
+finding negative-control tiles (little or no ink) …
+  6 negative-control tiles
+
+[1] investigating r=+0.312 offaxis
+    negative control |r|=0.434  FAIL — fires on blank papyrus
+
+[2] investigating r=+0.312 offaxis
+    negative control |r|=0.434  FAIL — fires on blank papyrus
+
+[3] investigating r=+0.312 offaxis
+    negative control |r|=0.434  FAIL — fires on blank papyrus
+
+[4] investigating r=+0.312 offaxis
+    negative control |r|=0.434  FAIL — fires on blank papyrus
+
+[5] investigating r=+0.312 offaxis
+    negative control |r|=0.434  FAIL — fires on blank papyrus
+
+[6] investigating r=+0.312 offaxis
+    negative control |r|=0.434  FAIL — fires on blank papyrus
+
+[7] investigating r=+0.275 offaxis
+    negative control |r|=0.394  FAIL — fires on blank papyrus
+
+[8] investigating r=+0.275 offaxis
+    negative control |r|=0.394  FAIL — fires on blank papyrus
+
+[9] investigating r=+0.275 offaxis
+    negative control |r|=0.394  FAIL — fires on blank papyrus
+
+[10] investigating r=+0.275 offaxis
+    negative control |r|=0.394  FAIL — fires on blank papyrus
+
+[11] investigating r=+0.275 offaxis
+    negative control |r|=0.394  FAIL — fires on blank papyrus
+
+[12] investigating r=+0.275 offaxis+plate
+    negative control |r|=0.394  FAIL — fires on blank papyrus
+
+[13] investigating r=+0.264 offaxis
+    negative control |r|=0.354  FAIL — fires on blank papyrus
+
+[14] investigating r=+0.264 offaxis
+    negative control |r|=0.354  FAIL — fires on blank papyrus
+
+[15] investigating r=+0.238 disorder+offaxis+sharp
+    negative control |r|=0.462  FAIL — fires on blank papyrus
+
+[16] investigating r=+0.237 offaxis+localsd
+    negative control |r|=0.487  FAIL — fires on blank papyrus
+
+[17] investigating r=+0.230 disorder+offaxis+sharp
+    negative control |r|=0.447  FAIL — fires on blank papyrus
+
+[18] investigating r=+0.211 disorder+offaxis+sharp
+    negative control |r|=0.466  FAIL — fires on blank papyrus
+
+[19] investigating r=+0.189 chandark
+    negative control |r|=0.044  PASS
+    fresh draw: too few tiles
+
+[20] investigating r=+0.182 offaxis
+    negative control |r|=0.421  FAIL — fires on blank papyrus
+
+[21] investigating r=+0.181 disorder+offaxis+chandark
+    negative control |r|=0.458  FAIL — fires on blank papyrus
+
+[22] investigating r=+0.444 offaxis+hfenergy
+    negative control |r|=0.209  FAIL — fires on blank papyrus
+
+[23] investigating r=+0.426 offaxis+hfenergy+disorder
+    negative control |r|=0.255  FAIL — fires on blank papyrus
+
+[24] investigating r=+0.423 offaxis+hfenergy+chandark
+    negative control |r|=0.281  FAIL — fires on blank papyrus

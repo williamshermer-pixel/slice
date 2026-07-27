@@ -103,7 +103,60 @@ space was mapped and eliminated — which is itself a result.
 **They die if the laptop sleeps.** `caffeinate -i` in an open Terminal keeps it
 alive with the screen off.
 
-## Next build: TRACERS (William's idea, not yet built)
+## THE RESULT THAT MATTERS MOST FROM THE OVERNIGHT RUN
+
+The swarm fired an alert. It was **false**, and the forensic team killed it.
+
+Candidate `offaxis + hfenergy + chandark`: held-out median **r = +0.423** across
+8 segments on 3 scrolls, 62% significant. It cleared all four swarm gates.
+
+Then the negative control ran it on **blank papyrus with no ink**: **|r| = 0.281**.
+
+Every high scorer did the same thing:
+
+| candidate | held-out r | on blank papyrus |
+| --- | --- | --- |
+| offaxis+hfenergy | +0.444 | 0.209 |
+| offaxis+hfenergy+disorder | +0.426 | 0.255 |
+| offaxis+hfenergy+chandark | +0.423 | 0.281 |
+| disorder+offaxis+sharp | +0.230 | 0.466 |
+| offaxis alone | +0.182 | 0.421 |
+
+**They are not detecting ink. They are detecting papyrus condition.** Text sits
+on well-preserved sheet, so "this sheet looks good" correlates with "there is
+text here" without any of it being about ink. Only `chandark` passed the control
+(|r|=0.044) and it had too few tiles to finish.
+
+**FIX BEFORE RUNNING THE SWARM AGAIN:** move the negative control INTO the
+swarm's own scoring, not after it. A variant's score should be
+`heldout_median - penalty * negative_control_r`, evaluated every time. As built,
+the swarm optimises straight into the papyrus-detector trap and will keep
+producing false alerts forever.
+
+## Next builds, in priority order
+
+**1. PCA across depth (untried, cheap, best idea available).**
+Multispectral conservators never look at bands one at a time — they run PCA
+across bands to find the combination that maximally separates ink from
+substrate. Often no single band shows the text and the third component does.
+
+We have one spectral channel, but **109 depth layers**. Every experiment this
+session collapsed depth first — averaged a band, picked the peak, discarded the
+rest. Nobody let the data choose which combination of depths carries signal.
+Tiles are already cached. No GPU. And the components become new features the
+swarm can search over, which breaks the ceiling that it can only recombine the
+eight quantities that happened to get written.
+
+**2. RTI-style specular enhancement (William asked for this).**
+Reflectance Transformation Imaging is standard on inscriptions: shoot an object
+under many light angles, fit a per-pixel model, then relight interactively and
+extract normals. The raking-light attempt here was a crude single-angle
+Lambertian version. RTI's *specular enhancement* mode is markedly better at
+making faint relief legible, and was never implemented. We have full 3D so
+normals come free — what is missing is the enhancement and the interactive
+relight, which is a display technique, not new information.
+
+**3. TRACERS (William's idea, not yet built)
 
 The third tier after scouts and forensics. The swarm searches *texture*
 statistics. Tracers would search for **the writing itself**:
