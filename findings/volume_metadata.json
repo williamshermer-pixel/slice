@@ -1,0 +1,436 @@
+{
+  "PHerc0125": {
+    "file": "20250821151825-9.362um-1.2m-113keV-masked.zarr",
+    "zattrsStatus": 200,
+    "levelPaths": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "levelCount": 6,
+    "level0Shape": [
+      20840,
+      8387,
+      8387
+    ],
+    "chunks": [
+      128,
+      128,
+      128
+    ],
+    "dtype": "|u1",
+    "compressor": null,
+    "dimensionSeparator": "/",
+    "lastLevelShape": [
+      652,
+      263,
+      263
+    ]
+  },
+  "PHerc0191": {
+    "file": "20250821151635-9.362um-1.2m-113keV-masked.zarr",
+    "zattrsStatus": 200,
+    "levelPaths": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "levelCount": 6,
+    "level0Shape": [
+      18977,
+      8387,
+      8387
+    ],
+    "chunks": [
+      128,
+      128,
+      128
+    ],
+    "dtype": "|u1",
+    "compressor": null,
+    "dimensionSeparator": "/",
+    "lastLevelShape": [
+      594,
+      263,
+      263
+    ]
+  },
+  "PHerc0211": {
+    "file": "20250821151803-9.362um-1.2m-113keV-masked.zarr",
+    "zattrsStatus": 200,
+    "levelPaths": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "levelCount": 6,
+    "level0Shape": [
+      19416,
+      7948,
+      7948
+    ],
+    "chunks": [
+      128,
+      128,
+      128
+    ],
+    "dtype": "|u1",
+    "compressor": null,
+    "dimensionSeparator": "/",
+    "lastLevelShape": [
+      607,
+      249,
+      249
+    ]
+  },
+  "PHerc0257": {
+    "file": "20250821151750-9.362um-1.2m-113keV-masked.zarr",
+    "zattrsStatus": 200,
+    "levelPaths": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "levelCount": 6,
+    "level0Shape": [
+      18872,
+      8388,
+      8388
+    ],
+    "chunks": [
+      128,
+      128,
+      128
+    ],
+    "dtype": "|u1",
+    "compressor": null,
+    "dimensionSeparator": "/",
+    "lastLevelShape": [
+      590,
+      263,
+      263
+    ]
+  },
+  "PHerc0268": {
+    "file": "20251110183117-8.640um-1.2m-116keV-masked.zarr",
+    "zattrsStatus": 200,
+    "levelPaths": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "levelCount": 6,
+    "level0Shape": [
+      14833,
+      12145,
+      12145
+    ],
+    "chunks": [
+      128,
+      128,
+      128
+    ],
+    "dtype": "|u1",
+    "compressor": null,
+    "dimensionSeparator": "/",
+    "lastLevelShape": [
+      464,
+      380,
+      380
+    ]
+  },
+  "PHerc0358": {
+    "file": "20250821151737-9.362um-1.2m-113keV-masked.zarr",
+    "zattrsStatus": 200,
+    "levelPaths": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "levelCount": 6,
+    "level0Shape": [
+      14744,
+      7783,
+      7783
+    ],
+    "chunks": [
+      128,
+      128,
+      128
+    ],
+    "dtype": "|u1",
+    "compressor": null,
+    "dimensionSeparator": "/",
+    "lastLevelShape": [
+      461,
+      244,
+      244
+    ]
+  },
+  "PHerc0800": {
+    "file": "20250521135224-8.640um-1.2m-116keV-masked.zarr",
+    "zattrsStatus": 200,
+    "levelPaths": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "levelCount": 6,
+    "level0Shape": [
+      24298,
+      9867,
+      9867
+    ],
+    "chunks": [
+      128,
+      128,
+      128
+    ],
+    "dtype": "|u1",
+    "compressor": null,
+    "dimensionSeparator": "/",
+    "lastLevelShape": [
+      760,
+      309,
+      309
+    ]
+  },
+  "PHerc0813": {
+    "file": "20250821151723-9.362um-1.2m-113keV-masked.zarr",
+    "zattrsStatus": 200,
+    "levelPaths": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "levelCount": 6,
+    "level0Shape": [
+      16993,
+      7947,
+      7947
+    ],
+    "chunks": [
+      128,
+      128,
+      128
+    ],
+    "dtype": "|u1",
+    "compressor": null,
+    "dimensionSeparator": "/",
+    "lastLevelShape": [
+      532,
+      249,
+      249
+    ]
+  },
+  "PHerc0826": {
+    "file": "20250821151701-9.362um-1.2m-113keV-masked.zarr",
+    "zattrsStatus": 200,
+    "levelPaths": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "levelCount": 6,
+    "level0Shape": [
+      16920,
+      8169,
+      8169
+    ],
+    "chunks": [
+      128,
+      128,
+      128
+    ],
+    "dtype": "|u1",
+    "compressor": null,
+    "dimensionSeparator": "/",
+    "lastLevelShape": [
+      529,
+      256,
+      256
+    ]
+  },
+  "PHerc1203": {
+    "file": "20250820131727-9.362um-1.2m-113keV-masked.zarr",
+    "zattrsStatus": 200,
+    "levelPaths": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "levelCount": 6,
+    "level0Shape": [
+      18977,
+      6844,
+      6844
+    ],
+    "chunks": [
+      128,
+      128,
+      128
+    ],
+    "dtype": "|u1",
+    "compressor": null,
+    "dimensionSeparator": "/",
+    "lastLevelShape": [
+      594,
+      214,
+      214
+    ]
+  },
+  "PHerc1218": {
+    "file": "20250521120456-8.640um-1.2m-116keV-masked.zarr",
+    "zattrsStatus": 200,
+    "levelPaths": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "levelCount": 6,
+    "level0Shape": [
+      23247,
+      7593,
+      7593
+    ],
+    "chunks": [
+      128,
+      128,
+      128
+    ],
+    "dtype": "|u1",
+    "compressor": null,
+    "dimensionSeparator": "/",
+    "lastLevelShape": [
+      727,
+      238,
+      238
+    ]
+  },
+  "PHerc1447": {
+    "file": "20250521151220-8.640um-1.2m-116keV-masked.zarr",
+    "zattrsStatus": 200,
+    "levelPaths": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "levelCount": 6,
+    "level0Shape": [
+      24297,
+      8343,
+      8343
+    ],
+    "chunks": [
+      128,
+      128,
+      128
+    ],
+    "dtype": "|u1",
+    "compressor": null,
+    "dimensionSeparator": "/",
+    "lastLevelShape": [
+      760,
+      261,
+      261
+    ]
+  },
+  "PHerc1545": {
+    "file": "20250821151648-9.362um-1.2m-113keV-masked.zarr",
+    "zattrsStatus": 200,
+    "levelPaths": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "levelCount": 6,
+    "level0Shape": [
+      20961,
+      7506,
+      7506
+    ],
+    "chunks": [
+      128,
+      128,
+      128
+    ],
+    "dtype": "|u1",
+    "compressor": null,
+    "dimensionSeparator": "/",
+    "lastLevelShape": [
+      656,
+      235,
+      235
+    ]
+  },
+  "PHerc0332": {
+    "file": "20251211183505-2.399um-0.2m-78keV-masked.zarr",
+    "zattrsStatus": 200,
+    "levelPaths": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "levelCount": 6,
+    "level0Shape": [
+      33592,
+      15761,
+      15761
+    ],
+    "chunks": [
+      128,
+      128,
+      128
+    ],
+    "dtype": "|u1",
+    "compressor": null,
+    "dimensionSeparator": "/",
+    "lastLevelShape": [
+      1050,
+      493,
+      493
+    ]
+  }
+}

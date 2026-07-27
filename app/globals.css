@@ -1,0 +1,213 @@
+@import "tailwindcss";
+
+/**
+ * PLATE & LEDGER
+ *
+ * Two registers, held apart on purpose.
+ *
+ * The PLATE is the scientific atlas figure: the slice sits inside a ruled
+ * frame with registration marks at the corners and an engraved caption below
+ * it. The LEDGER is the machine half — hairline-ruled rows, uppercase micro
+ * labels, numerals hard right so columns of figures line up and a changing
+ * digit is visible in peripheral vision.
+ *
+ * Nothing is rounded and nothing is a card. A conservation bench is flat,
+ * ruled and labelled, and the only thing on it allowed to be beautiful is the
+ * specimen.
+ */
+@theme {
+  --color-void: #0a0a0b;
+  --color-panel: #131316;
+  --color-rule: #26262b;
+  --color-ash: #8b8b94;
+  --color-papyrus: #e9e5db;
+  --color-ochre: #c8971f;
+
+  --font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+html,
+body {
+  background: var(--color-void);
+  color: var(--color-papyrus);
+  font-family: var(--font-mono);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- The plate ------------------------------------------------------- */
+
+/* Registration crosses, the way a plate is aligned on a press bed. Drawn in
+   the corners of the frame rather than on the image, so they never imply
+   anything about the data underneath. */
+.plate {
+  position: relative;
+  border: 1px solid var(--color-rule);
+  background: #000;
+}
+
+.plate::before,
+.plate::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.plate::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid var(--color-ochre);
+  border-left: 1px solid var(--color-ochre);
+}
+
+.plate::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1px solid var(--color-ochre);
+  border-right: 1px solid var(--color-ochre);
+}
+
+/* ---- The ledger ------------------------------------------------------ */
+
+.ledger {
+  border-top: 1px solid var(--color-rule);
+}
+
+.ledger-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.34rem 0;
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.ledger-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ash);
+  white-space: nowrap;
+}
+
+.ledger-value {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--color-papyrus);
+}
+
+/* The one place figures are allowed to be large. Serif numerals read as an
+   instrument face rather than a dashboard stat. */
+.ledger-figure {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.caption {
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--color-ash);
+}
+
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-ash);
+}
+
+/* ---- Controls -------------------------------------------------------- */
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 1px;
+  background: var(--color-rule);
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 3px;
+  height: 15px;
+  border-radius: 0;
+  background: var(--color-papyrus);
+  cursor: ew-resize;
+  transition: background 120ms, height 120ms;
+}
+
+input[type="range"]:hover::-webkit-slider-thumb,
+input[type="range"]:active::-webkit-slider-thumb {
+  background: var(--color-ochre);
+  height: 19px;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 3px;
+  height: 15px;
+  border: none;
+  border-radius: 0;
+  background: var(--color-papyrus);
+  cursor: ew-resize;
+}
+
+input[type="range"]:hover::-moz-range-thumb {
+  background: var(--color-ochre);
+}
+
+button,
+select {
+  font-family: var(--font-mono);
+}
+
+.btn {
+  border: 1px solid var(--color-rule);
+  background: transparent;
+  color: var(--color-papyrus);
+  padding: 0.4rem 0.6rem;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: border-color 120ms, color 120ms, background 120ms;
+}
+
+.btn:hover {
+  border-color: var(--color-ochre);
+  color: var(--color-ochre);
+}
+
+.btn[data-active="true"] {
+  border-color: var(--color-ochre);
+  background: color-mix(in srgb, var(--color-ochre) 12%, transparent);
+  color: var(--color-ochre);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn:disabled:hover {
+  border-color: var(--color-rule);
+  color: var(--color-papyrus);
+}
+
+::selection {
+  background: var(--color-ochre);
+  color: var(--color-void);
+}
+
+/* Respect a stated preference for less motion; nothing here needs to move. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}

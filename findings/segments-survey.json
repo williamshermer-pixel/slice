@@ -1,0 +1,435 @@
+{
+  "PHerc0125": {
+    "topLevel": {
+      "photos": true,
+      "representations": true,
+      "segments": false,
+      "volumes": true
+    },
+    "segmentCount": 0,
+    "firstSegments": [],
+    "segmentContents": {},
+    "representations": {
+      "subprefixes": [
+        "predictions"
+      ],
+      "predictions": [
+        "lasagna",
+        "surfaces"
+      ],
+      "surfaceZarrs": [
+        "20250821151825-surface-20260413222639-surface-m7-L0-th0.2.normal-grids",
+        "20250821151825-surface-20260413222639-surface-m7-L0-th0.2.zarr"
+      ]
+    }
+  },
+  "PHerc0191": {
+    "topLevel": {
+      "photos": true,
+      "representations": true,
+      "segments": false,
+      "volumes": true
+    },
+    "segmentCount": 0,
+    "firstSegments": [],
+    "segmentContents": {},
+    "representations": {
+      "subprefixes": [
+        "predictions"
+      ],
+      "predictions": [
+        "lasagna",
+        "surfaces"
+      ],
+      "surfaceZarrs": [
+        "20250821151635-surface-20260413222639-surface-m7-L0-th0.2.normal-grids",
+        "20250821151635-surface-20260413222639-surface-m7-L0-th0.2.zarr"
+      ]
+    }
+  },
+  "PHerc0211": {
+    "topLevel": {
+      "photos": true,
+      "representations": true,
+      "segments": false,
+      "volumes": true
+    },
+    "segmentCount": 0,
+    "firstSegments": [],
+    "segmentContents": {},
+    "representations": {
+      "subprefixes": [
+        "predictions"
+      ],
+      "predictions": [
+        "lasagna",
+        "surfaces"
+      ],
+      "surfaceZarrs": [
+        "20250821151803-surface-20260413222639-surface-m7-L0-th0.2.normal-grids",
+        "20250821151803-surface-20260413222639-surface-m7-L0-th0.2.zarr"
+      ]
+    }
+  },
+  "PHerc0257": {
+    "topLevel": {
+      "photos": true,
+      "representations": true,
+      "segments": false,
+      "volumes": true
+    },
+    "segmentCount": 0,
+    "firstSegments": [],
+    "segmentContents": {},
+    "representations": {
+      "subprefixes": [
+        "predictions"
+      ],
+      "predictions": [
+        "lasagna",
+        "surfaces"
+      ],
+      "surfaceZarrs": [
+        "20250821151750-surface-20260413222639-surface-m7-L0-th0.2.normal-grids",
+        "20250821151750-surface-20260413222639-surface-m7-L0-th0.2.zarr"
+      ]
+    }
+  },
+  "PHerc0268": {
+    "topLevel": {
+      "photos": true,
+      "representations": true,
+      "segments": false,
+      "volumes": true
+    },
+    "segmentCount": 0,
+    "firstSegments": [],
+    "segmentContents": {},
+    "representations": {
+      "subprefixes": [
+        "predictions"
+      ],
+      "predictions": [
+        "lasagna",
+        "surfaces"
+      ],
+      "surfaceZarrs": [
+        "20251110183117-surface-20260413222639-surface-m7-L0-th0.2.normal-grids",
+        "20251110183117-surface-20260413222639-surface-m7-L0-th0.2.zarr"
+      ]
+    }
+  },
+  "PHerc0358": {
+    "topLevel": {
+      "photos": true,
+      "representations": true,
+      "segments": false,
+      "volumes": true
+    },
+    "segmentCount": 0,
+    "firstSegments": [],
+    "segmentContents": {},
+    "representations": {
+      "subprefixes": [
+        "predictions"
+      ],
+      "predictions": [
+        "lasagna",
+        "surfaces"
+      ],
+      "surfaceZarrs": [
+        "20250821151737-surface-20260413222639-surface-m7-L0-th0.2.normal-grids",
+        "20250821151737-surface-20260413222639-surface-m7-L0-th0.2.zarr"
+      ]
+    }
+  },
+  "PHerc0800": {
+    "topLevel": {
+      "photos": true,
+      "representations": true,
+      "segments": true,
+      "volumes": true
+    },
+    "segmentCount": 6,
+    "firstSegments": [
+      "20251028213516-auto_grown_20251028213516907",
+      "20251028220042-auto_grown_20251028220042762",
+      "20251028220955-auto_grown_20251028220955262",
+      "20251028222030-auto_grown_20251028222030940",
+      "20251028225813-auto_grown_20251028225813045"
+    ],
+    "segmentContents": {
+      "20251028213516-auto_grown_20251028213516907": {
+        "subprefixes": [
+          "mesh"
+        ],
+        "surfaceVolumeZarrs": []
+      },
+      "20251028220042-auto_grown_20251028220042762": {
+        "subprefixes": [
+          "mesh"
+        ],
+        "surfaceVolumeZarrs": []
+      },
+      "20251028220955-auto_grown_20251028220955262": {
+        "subprefixes": [
+          "mesh"
+        ],
+        "surfaceVolumeZarrs": []
+      }
+    },
+    "representations": {
+      "subprefixes": [
+        "predictions"
+      ],
+      "predictions": [
+        "lasagna",
+        "surfaces"
+      ],
+      "surfaceZarrs": [
+        "20250521135224-surface-20260413222639-surface-m7-L0-th0.2.normal-grids",
+        "20250521135224-surface-20260413222639-surface-m7-L0-th0.2.zarr"
+      ]
+    }
+  },
+  "PHerc0813": {
+    "topLevel": {
+      "photos": true,
+      "representations": true,
+      "segments": false,
+      "volumes": true
+    },
+    "segmentCount": 0,
+    "firstSegments": [],
+    "segmentContents": {},
+    "representations": {
+      "subprefixes": [
+        "predictions"
+      ],
+      "predictions": [
+        "lasagna",
+        "surfaces"
+      ],
+      "surfaceZarrs": [
+        "20250821151723-surface-20260413222639-surface-m7-L0-th0.2.normal-grids",
+        "20250821151723-surface-20260413222639-surface-m7-L0-th0.2.zarr"
+      ]
+    }
+  },
+  "PHerc0826": {
+    "topLevel": {
+      "photos": true,
+      "representations": true,
+      "segments": false,
+      "volumes": true
+    },
+    "segmentCount": 0,
+    "firstSegments": [],
+    "segmentContents": {},
+    "representations": {
+      "subprefixes": [
+        "predictions"
+      ],
+      "predictions": [
+        "lasagna",
+        "surfaces"
+      ],
+      "surfaceZarrs": [
+        "20250821151701-surface-20260413222639-surface-m7-L0-th0.2.normal-grids",
+        "20250821151701-surface-20260413222639-surface-m7-L0-th0.2.zarr"
+      ]
+    }
+  },
+  "PHerc1203": {
+    "topLevel": {
+      "photos": true,
+      "representations": true,
+      "segments": true,
+      "volumes": true
+    },
+    "segmentCount": 1,
+    "firstSegments": [
+      "raw"
+    ],
+    "segmentContents": {
+      "raw": {
+        "subprefixes": [
+          "auto_grown_20250923163217042",
+          "auto_grown_20250923163219195",
+          "auto_grown_20250923163223390",
+          "auto_grown_20250923163227956",
+          "auto_grown_20250923163230146",
+          "auto_grown_20250923163231537",
+          "auto_grown_20250923163331524",
+          "auto_grown_20250923164241632",
+          "auto_grown_20250923164608661",
+          "auto_grown_20250923164615417",
+          "auto_grown_20250923164713356",
+          "auto_grown_20250925165041633",
+          "auto_grown_20250925223153537",
+          "auto_grown_20250929222256117",
+          "auto_grown_20250930000321811",
+          "auto_grown_20250930104534929",
+          "auto_grown_20251005221856743",
+          "auto_grown_20251005230118636",
+          "auto_grown_20251005230830030",
+          "auto_grown_20251005230830031",
+          "auto_grown_20251005231446963",
+          "auto_grown_20251005231446965"
+        ],
+        "surfaceVolumeZarrs": []
+      }
+    },
+    "representations": {
+      "subprefixes": [
+        "predictions"
+      ],
+      "predictions": [
+        "lasagna",
+        "surfaces"
+      ],
+      "surfaceZarrs": [
+        "20250820131727-surface-20260413222639-surface-m7-L0-th0.2.normal-grids",
+        "20250820131727-surface-20260413222639-surface-m7-L0-th0.2.zarr",
+        "20260319130212-surface-20260413222639-surface-m7-L2-th0.2.normal-grids",
+        "20260319130212-surface-20260413222639-surface-m7-L2-th0.2.zarr"
+      ]
+    }
+  },
+  "PHerc1218": {
+    "topLevel": {
+      "photos": true,
+      "representations": true,
+      "segments": false,
+      "volumes": true
+    },
+    "segmentCount": 0,
+    "firstSegments": [],
+    "segmentContents": {},
+    "representations": {
+      "subprefixes": [
+        "predictions"
+      ],
+      "predictions": [
+        "lasagna",
+        "surfaces"
+      ],
+      "surfaceZarrs": [
+        "20250521120456-surface-20260413222639-surface-m7-L0-th0.2.normal-grids",
+        "20250521120456-surface-20260413222639-surface-m7-L0-th0.2.zarr"
+      ]
+    }
+  },
+  "PHerc1447": {
+    "topLevel": {
+      "photos": true,
+      "representations": true,
+      "segments": true,
+      "volumes": true
+    },
+    "segmentCount": 16,
+    "firstSegments": [
+      "20250502180708-auto_grown_20250502160708188",
+      "20250502180748-auto_grown_20250502160748721",
+      "20250502182142-auto_grown_20250502161324419",
+      "20250502182456-auto_grown_20250502161202782",
+      "20250502183138-auto_grown_20250502162038685"
+    ],
+    "segmentContents": {
+      "20250502180708-auto_grown_20250502160708188": {
+        "subprefixes": [
+          "mesh"
+        ],
+        "surfaceVolumeZarrs": []
+      },
+      "20250502180748-auto_grown_20250502160748721": {
+        "subprefixes": [
+          "mesh"
+        ],
+        "surfaceVolumeZarrs": []
+      },
+      "20250502182142-auto_grown_20250502161324419": {
+        "subprefixes": [
+          "mesh"
+        ],
+        "surfaceVolumeZarrs": []
+      }
+    },
+    "representations": {
+      "subprefixes": [
+        "predictions"
+      ],
+      "predictions": [
+        "lasagna",
+        "surfaces"
+      ],
+      "surfaceZarrs": [
+        "20250521151220-surface-20260413222639-surface-m7-L0-th0.2.normal-grids",
+        "20250521151220-surface-20260413222639-surface-m7-L0-th0.2.zarr"
+      ]
+    }
+  },
+  "PHerc1545": {
+    "topLevel": {
+      "photos": true,
+      "representations": true,
+      "segments": false,
+      "volumes": true
+    },
+    "segmentCount": 0,
+    "firstSegments": [],
+    "segmentContents": {},
+    "representations": {
+      "subprefixes": [
+        "predictions"
+      ],
+      "predictions": [
+        "lasagna",
+        "surfaces"
+      ],
+      "surfaceZarrs": [
+        "20250821151648-surface-20260413222639-surface-m7-L0-th0.2.normal-grids",
+        "20250821151648-surface-20260413222639-surface-m7-L0-th0.2.zarr"
+      ]
+    }
+  },
+  "PHerc0332": {
+    "topLevel": {
+      "photos": true,
+      "representations": true,
+      "segments": true,
+      "volumes": true
+    },
+    "segmentCount": 2,
+    "firstSegments": [
+      "20240711124827-20240618142020",
+      "20240828190516-20240716140050"
+    ],
+    "segmentContents": {
+      "20240711124827-20240618142020": {
+        "subprefixes": [
+          "mesh"
+        ],
+        "surfaceVolumeZarrs": []
+      },
+      "20240828190516-20240716140050": {
+        "subprefixes": [
+          "mesh"
+        ],
+        "surfaceVolumeZarrs": []
+      }
+    },
+    "representations": {
+      "subprefixes": [
+        "predictions"
+      ],
+      "predictions": [
+        "surfaces"
+      ],
+      "surfaceZarrs": [
+        "20251211183505-surface-20260413222639-surface-m7-L2-th0.2.normal-grids",
+        "20251211183505-surface-20260413222639-surface-m7-L2-th0.2.zarr"
+      ]
+    }
+  }
+}

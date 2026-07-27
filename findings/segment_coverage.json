@@ -1,0 +1,320 @@
+[
+ {
+  "scroll": "PHerc1447",
+  "seg": "20250502205333-auto_grown_20250502181030065",
+  "area": 3.537349965125465,
+  "valid": 14677,
+  "livefrac": 1.0,
+  "live_area": 3.537349965125465,
+  "grid": [
+   129,
+   186
+  ],
+  "chunks": 548,
+  "live_chunks": 548
+ },
+ {
+  "scroll": "PHerc1447",
+  "seg": "20250502184845-auto_grown_20250502164121265",
+  "area": 4.92410928002289,
+  "valid": 20579,
+  "livefrac": 0.5858885271393168,
+  "live_area": 2.8849791335456527,
+  "grid": [
+   142,
+   223
+  ],
+  "chunks": 750,
+  "live_chunks": 446
+ },
+ {
+  "scroll": "PHerc0800",
+  "seg": "20251028222030-auto_grown_20251028222030940",
+  "area": 2.27573690921228,
+  "valid": 8352,
+  "livefrac": 1.0,
+  "live_area": 2.27573690921228,
+  "grid": [
+   156,
+   156
+  ],
+  "chunks": 334,
+  "live_chunks": 334
+ },
+ {
+  "scroll": "PHerc1447",
+  "seg": "20250502182456-auto_grown_20250502161202782",
+  "area": 4.740659617900564,
+  "valid": 19984,
+  "livefrac": 0.47137710168134506,
+  "live_area": 2.2346383907437604,
+  "grid": [
+   160,
+   232
+  ],
+  "chunks": 748,
+  "live_chunks": 365
+ },
+ {
+  "scroll": "PHerc1447",
+  "seg": "20250502184658-auto_grown_20250502163923577",
+  "area": 4.4623567198377705,
+  "valid": 18756,
+  "livefrac": 0.4703028364256771,
+  "live_area": 2.098659022482884,
+  "grid": [
+   178,
+   208
+  ],
+  "chunks": 720,
+  "live_chunks": 346
+ },
+ {
+  "scroll": "PHerc1447",
+  "seg": "20250502185519-auto_grown_20250502164303733",
+  "area": 3.8546953560819595,
+  "valid": 16316,
+  "livefrac": 0.529848001961265,
+  "live_area": 2.0424026325893934,
+  "grid": [
+   160,
+   136
+  ],
+  "chunks": 613,
+  "live_chunks": 328
+ },
+ {
+  "scroll": "PHerc1447",
+  "seg": "20250502182142-auto_grown_20250502161324419",
+  "area": 3.0280456507749403,
+  "valid": 12659,
+  "livefrac": 0.6318034599889407,
+  "live_area": 1.9131297191640708,
+  "grid": [
+   118,
+   196
+  ],
+  "chunks": 510,
+  "live_chunks": 315
+ },
+ {
+  "scroll": "PHerc1447",
+  "seg": "20250502183421-auto_grown_20250502161744358",
+  "area": 4.51015874639352,
+  "valid": 18970,
+  "livefrac": 0.4029520295202952,
+  "live_area": 1.8173776203179792,
+  "grid": [
+   159,
+   220
+  ],
+  "chunks": 752,
+  "live_chunks": 328
+ },
+ {
+  "scroll": "PHerc0800",
+  "seg": "20251028225813-auto_grown_20251028225813045",
+  "area": 1.7976263262341499,
+  "valid": 6622,
+  "livefrac": 1.0,
+  "live_area": 1.7976263262341499,
+  "grid": [
+   138,
+   151
+  ],
+  "chunks": 271,
+  "live_chunks": 271
+ },
+ {
+  "scroll": "PHerc0800",
+  "seg": "20251028213516-auto_grown_20251028213516907",
+  "area": 1.6740551156103518,
+  "valid": 6160,
+  "livefrac": 1.0,
+  "live_area": 1.6740551156103518,
+  "grid": [
+   122,
+   96
+  ],
+  "chunks": 255,
+  "live_chunks": 255
+ },
+ {
+  "scroll": "PHerc1447",
+  "seg": "20250502184201-auto_grown_20250502163549332",
+  "area": 3.6081770515928846,
+  "valid": 15165,
+  "livefrac": 0.44807121661721067,
+  "live_area": 1.6167202812775239,
+  "grid": [
+   113,
+   180
+  ],
+  "chunks": 551,
+  "live_chunks": 255
+ },
+ {
+  "scroll": "PHerc0800",
+  "seg": "20251028220042-auto_grown_20251028220042762",
+  "area": 1.564192794962146,
+  "valid": 5772,
+  "livefrac": 1.0,
+  "live_area": 1.564192794962146,
+  "grid": [
+   93,
+   95
+  ],
+  "chunks": 237,
+  "live_chunks": 237
+ },
+ {
+  "scroll": "PHerc0800",
+  "seg": "20251028220955-auto_grown_20251028220955262",
+  "area": 1.5113396940044832,
+  "valid": 5600,
+  "livefrac": 1.0,
+  "live_area": 1.5113396940044832,
+  "grid": [
+   90,
+   84
+  ],
+  "chunks": 223,
+  "live_chunks": 223
+ },
+ {
+  "scroll": "PHerc1447",
+  "seg": "20250502180748-auto_grown_20250502160748721",
+  "area": 2.6859232931743664,
+  "valid": 11303,
+  "livefrac": 0.442802795717951,
+  "live_area": 1.1893343433015753,
+  "grid": [
+   134,
+   183
+  ],
+  "chunks": 478,
+  "live_chunks": 213
+ },
+ {
+  "scroll": "PHerc1447",
+  "seg": "20250502183138-auto_grown_20250502162038685",
+  "area": 2.1022880788916023,
+  "valid": 9025,
+  "livefrac": 0.5178947368421053,
+  "live_area": 1.0887639313838615,
+  "grid": [
+   94,
+   160
+  ],
+  "chunks": 370,
+  "live_chunks": 190
+ },
+ {
+  "scroll": "PHerc1447",
+  "seg": "20250502180708-auto_grown_20250502160708188",
+  "area": 2.892648287598707,
+  "valid": 12152,
+  "livefrac": 0.18556616194865042,
+  "live_area": 0.5367776405970279,
+  "grid": [
+   109,
+   177
+  ],
+  "chunks": 460,
+  "live_chunks": 95
+ },
+ {
+  "scroll": "PHerc0800",
+  "seg": "20251029010146-auto_grown_20251029010146642",
+  "area": 0.3792063181297814,
+  "valid": 1444,
+  "livefrac": 1.0,
+  "live_area": 0.3792063181297814,
+  "grid": [
+   42,
+   42
+  ],
+  "chunks": 67,
+  "live_chunks": 67
+ },
+ {
+  "scroll": "PHerc1447",
+  "seg": "20250702235910-auto_grown_20250702235910292",
+  "area": null,
+  "valid": 14336,
+  "livefrac": 1.0,
+  "live_area": null,
+  "grid": [
+   149,
+   162
+  ],
+  "chunks": 547,
+  "live_chunks": 547
+ },
+ {
+  "scroll": "PHerc1447",
+  "seg": "20250703025628-auto_grown_20250703025628283",
+  "area": null,
+  "valid": 23834,
+  "livefrac": 1.0,
+  "live_area": null,
+  "grid": [
+   205,
+   213
+  ],
+  "chunks": 921,
+  "live_chunks": 921
+ },
+ {
+  "scroll": "PHerc1447",
+  "seg": "20250703034159-auto_grown_20250703034159599",
+  "area": null,
+  "valid": 26908,
+  "livefrac": 1.0,
+  "live_area": null,
+  "grid": [
+   181,
+   261
+  ],
+  "chunks": 1025,
+  "live_chunks": 1025
+ },
+ {
+  "scroll": "PHerc1447",
+  "seg": "20251105093211-z_dbg_gen_00320",
+  "area": null,
+  "valid": 28064,
+  "livefrac": 0.9904147662485747,
+  "live_area": null,
+  "grid": [
+   682,
+   411
+  ],
+  "chunks": 1151,
+  "live_chunks": 1100
+ },
+ {
+  "scroll": "PHerc0332",
+  "seg": "20240711124827-20240618142020",
+  "area": null,
+  "valid": 0,
+  "livefrac": 0.0,
+  "live_area": 0.0,
+  "grid": [
+   2,
+   2
+  ]
+ },
+ {
+  "scroll": "PHerc0332",
+  "seg": "20240828190516-20240716140050",
+  "area": null,
+  "valid": 0,
+  "livefrac": 0.0,
+  "live_area": 0.0,
+  "grid": [
+   2,
+   2
+  ]
+ }
+]
