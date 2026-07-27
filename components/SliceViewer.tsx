@@ -26,6 +26,7 @@ import {
   getColormap,
   scaleBar,
   linePitchCheck,
+  resolvability,
   HAND,
   type ColormapId,
 } from "@/lib/colormaps";
@@ -316,6 +317,9 @@ export default function SliceViewer() {
     const r = linePitchCheck(region.data, region.width, region.height, umPerPixel);
     return r ? ({ tooShort: false, ...r } as const) : null;
   }, [region, level, specimen.voxelUm]);
+
+  /** Can this scan physically hold the ink? Decided by voxel size alone. */
+  const res = useMemo(() => resolvability(specimen.voxelUm), [specimen.voxelUm]);
 
   const paintedLayerCount = useMemo(() => {
     void maskVersion; // recount whenever a stroke lands
@@ -744,6 +748,21 @@ export default function SliceViewer() {
             />
           </div>
 
+          {/* Can this scan hold ink at all? The letter is never the problem —
+              347 voxels tall even on the coarsest scroll. The ink LAYER is
+              ~15 um, and at 8.64 um sampling that is 1.7 voxels, under the ~3
+              needed to resolve anything. Better to say so than to let someone
+              spend a month hunting a signal the scan never recorded. */}
+          {res.verdict !== "resolved" && status === "ready" && (
+            <p className="mt-3 border border-ochre/40 bg-ochre/5 px-3 py-2 font-mono text-[11px] text-ochre">
+              Ink layer is ~{HAND.inkLayerUm} µm — {res.inkVoxels.toFixed(1)} voxels at
+              this scan&apos;s {specimen.voxelUm} µm sampling, below the ~3 needed to
+              resolve a feature. A letter here is {Math.round(res.letterVoxels).toLocaleString()} voxels,
+              so size is not the limit — the ink is under-sampled, not faint. Scroll 1
+              gets 6.2 voxels through the same layer, which is why it could be read.
+            </p>
+          )}
+
           {/* Is this text, or is it fibre? Papyrus is periodic at roughly a
               sixth of a line pitch, so the period tells them apart where
               brightness cannot. Thresholded noise looks like letters to
@@ -821,6 +840,20 @@ export default function SliceViewer() {
                 </Row>
                 <Row label="downsample">{level.factor}×</Row>
                 <Row label="voxel">{specimen.voxelUm} µm</Row>
+                <Row label="ink layer">
+                  <span
+                    className={
+                      res.verdict === "resolved"
+                        ? "text-papyrus"
+                        : res.verdict === "marginal"
+                          ? "text-ochre"
+                          : "text-ochre"
+                    }
+                  >
+                    {res.inkVoxels.toFixed(1)} vox
+                    {res.verdict !== "resolved" && " ⚠"}
+                  </span>
+                </Row>
                 <Row label="field">
                   {(box.width * specimen.voxelUm) / 1000 > 1
                     ? `${((box.width * specimen.voxelUm) / 1000).toFixed(1)} mm`

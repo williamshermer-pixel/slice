@@ -123,7 +123,44 @@ export const HAND = {
   letterAdvanceUm: 1860,
   letterHeightUm: 3000,
   strokeWidthUm: 346,
+  /**
+   * Thickness of the ink layer itself. Published SEM gives 3–17 µm and the 2026
+   * full-scroll paper reports strokes 10–20 µm; 15 µm is the middle of both.
+   *
+   * This is the number that decides everything, and it is not the letter size.
+   */
+  inkLayerUm: 15,
 };
+
+export type Resolvability = {
+  inkVoxels: number;
+  strokeVoxels: number;
+  letterVoxels: number;
+  verdict: "resolved" | "marginal" | "unresolved";
+};
+
+/**
+ * Can this scan physically hold the ink?
+ *
+ * A letter is enormous in voxel terms even on the coarsest scroll — 347 voxels
+ * tall at 8.64 µm — and a stroke is 40 voxels wide. Neither is near any limit.
+ * The ink *layer* is ~15 µm, which at 8.64 µm sampling is 1.7 voxels. You need
+ * roughly three to resolve a feature at all.
+ *
+ * So on every unread scroll the ink is not faint, it is under-sampled: the scan
+ * never recorded it. Scroll 1 gets 6.2 voxels through the same layer, which is
+ * why that scroll could be read and these cannot. Saying so plainly saves
+ * people from hunting a signal that is not in the file.
+ */
+export function resolvability(voxelUm: number): Resolvability {
+  const inkVoxels = HAND.inkLayerUm / voxelUm;
+  return {
+    inkVoxels,
+    strokeVoxels: HAND.strokeWidthUm / voxelUm,
+    letterVoxels: (HAND.letterHeightUm / voxelUm) * (HAND.letterAdvanceUm / voxelUm),
+    verdict: inkVoxels >= 3 ? "resolved" : inkVoxels >= 1.5 ? "marginal" : "unresolved",
+  };
+}
 
 /**
  * Does this look like text? Text sits on evenly spaced baselines, so the row
