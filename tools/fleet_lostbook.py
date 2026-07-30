@@ -15,9 +15,13 @@ State in out/lostbook/fleet.json. ALWAYS terminate pods.
 import base64, hashlib, json, os, sys, time, urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, "out", "lostbook")
+# SCROLL/OUTDIR env let one launcher fly any scroll. Default = the lost book.
+SCROLL = os.environ.get("SCROLL", "PHerc0139")
+OUT = os.path.join(ROOT, "out", os.environ.get("OUTDIR", "lostbook"))
 os.makedirs(OUT, exist_ok=True)
 STATE = os.path.join(OUT, "fleet.json")
+# "none" => base iter-5, correct for any scroll we have not fine-tuned on.
+WEIGHTS = os.environ.get("WEIGHTS", "tuned")
 WPT = os.path.join(ROOT, "out", "bootstrap", "tuned_0139_honest.pt")
 PART = 8 * 1024 * 1024   # proxy kills PUT bodies much larger than this
 API = "https://rest.runpod.io/v1"
@@ -46,7 +50,7 @@ def api(method, path, body=None):
 
 def segs():
     t = json.load(open(os.path.join(ROOT, "findings", "targets.json")))
-    return [s for s in t if s["scroll"] == "PHerc0139"]
+    return [s for s in t if s["scroll"] == SCROLL]
 
 
 def job_script(shard, wsrc, tag):
@@ -82,20 +86,26 @@ def launch(n):
     ss = segs()
     shards = [ss[i::n] for i in range(n)]
     # hub first: its id feeds the workers' WSRC
-    hub_cmd = job_script(shards[0], "local", "s0")
-    hub = create_pod("lostbook-hub", hub_cmd)
+    hub_cmd = job_script(shards[0],
+                         "none" if WEIGHTS == "none" else "local", "s0")
+    hub = create_pod(f"{SCROLL.lower()}-hub", hub_cmd)
     pods = [{"id": hub["id"], "name": "lostbook-hub", "tag": "s0",
              "n_segs": len(shards[0])}]
     print(f"hub {hub['id']} ({len(shards[0])} segs)")
     for i in range(1, n):
-        cmd = job_script(shards[i], proxy(hub["id"]), f"s{i}")
-        p = create_pod(f"lostbook-w{i}", cmd)
+        cmd = job_script(shards[i],
+                         "none" if WEIGHTS == "none" else proxy(hub["id"]),
+                         f"s{i}")
+        p = create_pod(f"{SCROLL.lower()}-w{i}", cmd)
         pods.append({"id": p["id"], "name": f"lostbook-w{i}", "tag": f"s{i}",
                      "n_segs": len(shards[i])})
         print(f"w{i} {p['id']} ({len(shards[i])} segs)")
-    json.dump({"pods": pods, "launched": time.strftime("%F %T")},
+    json.dump({"pods": pods, "scroll": SCROLL, "weights": WEIGHTS,
+               "launched": time.strftime("%F %T")},
               open(STATE, "w"), indent=1)
-    print(f"state -> {STATE}\nnext: python3 tools/fleet_lostbook.py upload")
+    print(f"state -> {STATE}")
+    print("next: " + ("status (no weight upload needed)" if WEIGHTS == "none"
+                      else "python3 tools/fleet_lostbook.py upload"))
 
 
 def put(url, path):

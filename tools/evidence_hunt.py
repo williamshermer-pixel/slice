@@ -51,7 +51,7 @@ def pick_window():
         for k in known:
             cy = max(0, min(bm.shape[0]-1, int(round(k["cy"])) - BOX//2))
             cx = max(0, min(bm.shape[1]-1, int(round(k["cx"])) - BOX//2))
-            if bm[cy, cx] > 0.3342:
+            if bm[cy, cx] > json.load(open(os.path.join(D.LB,'hunt.json')))['threshold']:
                 hit += 1
         rate = hit / len(known)
         if best is None or rate > best[0]:
@@ -93,7 +93,7 @@ def main():
     if not got:
         sys.exit("no usable text window")
     rate, tag, meta, ours, pub, known, bm = got
-    thr = 0.3342
+    thr = json.load(open(os.path.join(D.LB, "hunt.json")))["threshold"]
     cc = json.load(open(os.path.join(D.LB, "condition_control.json")))
     hunt = json.load(open(os.path.join(D.LB, "hunt.json")))
     ls = json.load(open(os.path.join(D.LB, "letterscale.json")))

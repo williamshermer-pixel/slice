@@ -13,18 +13,39 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LB = os.path.join(ROOT, "out", "lostbook")
+
+# --- per-scribe configuration ------------------------------------------
+# The hand is NOT shared between scrolls (PHerc0139 writes a third the size
+# of Scroll 1), so every constant below is measured per scroll and selected
+# by env. Applying one scroll's ruler to another manufactures candidates --
+# that error produced two retractions in this project.
+HANDS = {
+    # scroll:      (outdir,   letter_mm, lo_mm, hi_mm, adv_mm, pitch_mm, mode)
+    # mode: "shape" where the model resolves stroke structure (3 mm hand);
+    # "envelope" where it only resolves letter-sized mass (measured on 0139:
+    # shape recovers 9.9% of known letters there, too blind to interpret).
+    "PHerc0139":   ("lostbook", 1.09, 0.70, 2.20, 0.70, 4.57, "envelope"),
+    "PHercParis4": ("scroll1",  3.00, 1.80, 4.60, 1.86, 6.18, "shape"),
+}
+SCROLL = os.environ.get("SCROLL", "PHerc0139")
+if SCROLL not in HANDS:
+    raise SystemExit(f"no measured hand for {SCROLL} — measure it first "
+                     f"(per-scribe doctrine); known: {list(HANDS)}")
+_OUTDIR, LETTER_MM, _LO, _HI, _ADV, _PITCH, MODE = HANDS[SCROLL]
+MODE = os.environ.get("MODE", MODE)
+
+LB = os.path.join(ROOT, "out", os.environ.get("OUTDIR", _OUTDIR))
 B = "https://vesuvius-challenge-open-data.s3.us-east-1.amazonaws.com"
 UM_PER_PX = 9.032          # pred is quarter-res of the 2.258 um -L1 canvas
 MM = 1000.0 / UM_PER_PX    # px per mm (~110.7)
-LETTER_LO, LETTER_HI = int(0.7 * MM), int(2.2 * MM)   # 77..243 px
-ADVANCE = 0.70 * MM                                    # 77.5 px
-PITCH = 4.57 * MM                                      # 506 px
+LETTER_LO, LETTER_HI = int(_LO * MM), int(_HI * MM)
+ADVANCE = _ADV * MM
+PITCH = _PITCH * MM
 OURS_PCT, PUB_COLD = 96.0, 60.0
 
 TARGETS = {t["seg"]: t for t in
            json.load(open(os.path.join(ROOT, "findings", "targets.json")))
-           if t["scroll"] == "PHerc0139"}
+           if t["scroll"] == SCROLL}
 _ink_cache = {}
 
 
@@ -157,7 +178,7 @@ def hot_mask(ours, floor=None):
     return hot & (ours >= floor)
 
 
-def gate(ours, pub, floor=None, mode="envelope"):
+def gate(ours, pub, floor=None, mode=None):
     """The differential gates. Production path — the calibration harness
     calls THIS, so the test can never drift from what judges real maps.
 
@@ -171,6 +192,7 @@ def gate(ours, pub, floor=None, mode="envelope"):
                      comes from the ABSOLUTE floor plus a mandatory spatial
                      null, not from shape.
     """
+    mode = MODE if mode is None else mode
     mask = hot_mask(ours, floor) & (pub < PUB_COLD)
     hi = LETTER_HI if mode == "shape" else int(3 * LETTER_HI)
     sized = [c for c in components(mask)

@@ -182,16 +182,21 @@ def run_window(model, torch, t, D, wi, aim, cy0, cx0, cov, si):
 
 def main():
     threading.Thread(target=serve, daemon=True).start()
-    weights_ready()
     from PIL import Image
     import torch
     from transformers import AutoModel
     model = AutoModel.from_pretrained("scrollprize/PHerc.1667-iteration-5",
                                       trust_remote_code=True)
-    sd = torch.load(WPT, map_location="cpu")
-    model.load_state_dict(sd)
+    if WSRC == "none":
+        # Base iter-5. Correct for any scroll we have NOT fine-tuned on: the
+        # 0139 weights are specialised to that scribe's hand and would be a
+        # domain mismatch elsewhere.
+        log("base iter-5 (no fine-tune)")
+    else:
+        weights_ready()
+        model.load_state_dict(torch.load(WPT, map_location="cpu"))
+        log("tuned model loaded on iter-5")
     model.eval().cuda()
-    log("tuned model loaded on iter-5")
     for si, t in enumerate(SEGS):
         try:
             za = json.loads(get(f"{B}/{t['sv']}0/.zarray").decode())

@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import differential_0139 as D
 import positive_control_0139 as P
 
-BOX = int(1.09 * D.MM)          # his median letter, ~121 px
+BOX = int(D.LETTER_MM * D.MM)   # the scribe's median letter
 TARGET_FPR = 0.001
 
 
