@@ -128,25 +128,55 @@ def defog(p):
     return sharp.astype(np.uint8)
 
 
-def hot_mask(ours):
-    """Top-(100-OURS_PCT)% of our map. Guards the saturation case: when many
-    pixels tie at the max, `> p96` is EMPTY and the search goes silently
-    blind, so fall back to >= on the same threshold."""
+def floor_value():
+    """Absolute confidence floor, calibrated on his KNOWN ink by
+    tools/calibrate_floor.py (operating point: 0.2% FPR on known-blank
+    papyrus). Without this the search is relative-only and the spatial null
+    kills everything it finds -- measured, 2026-07-30."""
+    p = os.path.join(LB, "floor.json")
+    if not os.path.exists(p):
+        raise SystemExit("run tools/calibrate_floor.py first — a relative-only "
+                         "differential does not survive its own null test")
+    return json.load(open(p))["floor"]
+
+
+def hot_mask(ours, floor=None):
+    """Hot = relatively hottest AND absolutely confident.
+
+    The relative half (top 4%) always selects 4% of pixels whether ink exists
+    or not; the absolute half is what makes a margin hit mean something.
+    Saturation guard: when pixels tie at the max, `> p96` is EMPTY and the
+    search goes silently blind, so fall back to >= on the same threshold.
+    """
     thr = np.percentile(ours, OURS_PCT)
     hot = ours > thr
     if not hot.any():
         hot = ours >= thr
-    return hot
+    if floor is None:
+        floor = floor_value()
+    return hot & (ours >= floor)
 
 
-def gate(ours, pub):
+def gate(ours, pub, floor=None, mode="envelope"):
     """The differential gates. Production path — the calibration harness
-    calls THIS, so the test can never drift from what judges real maps."""
-    mask = hot_mask(ours) & (pub < PUB_COLD)
+    calls THIS, so the test can never drift from what judges real maps.
+
+    mode="shape":    require stroke topology (fill/aspect). Correct for a
+                     3 mm hand like Scroll 1's. MEASURED on 0139: recovers
+                     only 9.9% of his known letters -> 26% power on ten
+                     hidden letters, i.e. too blind to interpret.
+    mode="envelope": size only, allowing merged runs up to three letters.
+                     Respects the resolution ceiling at his 1.09 mm hand
+                     (READER_DESIGN's envelope mode). Discrimination then
+                     comes from the ABSOLUTE floor plus a mandatory spatial
+                     null, not from shape.
+    """
+    mask = hot_mask(ours, floor) & (pub < PUB_COLD)
+    hi = LETTER_HI if mode == "shape" else int(3 * LETTER_HI)
     sized = [c for c in components(mask)
              if c["area"] >= 200
-             and LETTER_LO <= max(c["y1"]-c["y0"], c["x1"]-c["x0"]) <= LETTER_HI]
-    comps = [c for c in sized if is_strokelike(c)]
+             and LETTER_LO <= max(c["y1"]-c["y0"], c["x1"]-c["x0"]) <= hi]
+    comps = [c for c in sized if is_strokelike(c)] if mode == "shape" else sized
     return mask, comps, rhythm(mask, comps), len(sized)
 
 
@@ -169,7 +199,9 @@ def analyze(mp):
             near += d < PITCH
         adj = near / n
     passes = 2 <= n <= 9
-    score = (n if passes else 0) * (1 + r) * (1 + adj)
+    # adjacency is NOT scored: every aimed window requires >=2% nearby ink by
+    # construction, so adj==1.0 is guaranteed and carries no information.
+    score = (n if passes else 0) * (1 + r)
     return dict(tag=tag, seg=meta["seg"].split("/")[-2], aim=meta["aim"],
                 window=meta["window"], n_comps=n, n_sized=n_sized,
                 rhythm=round(r, 3), adjacency=round(adj, 3),
