@@ -92,6 +92,41 @@ export default function RecordPage() {
         </nav>
       </header>
 
+      {/* ---- the reveal -------------------------------------------------
+          The one animated element on the site, and it is the specimen
+          itself: an instrument trace sweeps the band and the ink the tuned
+          model reads surfaces out of the sheet. Real data, both frames. */}
+      <figure className="mb-10">
+        <div className="plate relative overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/reveal-sheet.png"
+            alt="A band of carbonized papyrus from PHerc0139, micro-CT, depth-averaged."
+            className="block h-[200px] w-full object-cover md:h-[240px]"
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/reveal-ink.png"
+            alt="The same band as the tuned model reads it: ink probability."
+            className="reveal-ink absolute inset-0 h-full w-full object-cover"
+            aria-hidden
+          />
+          <span className="reveal-trace" aria-hidden />
+          <span className="eyebrow absolute left-2.5 top-2 z-[1] text-papyrus/80">
+            the sheet
+          </span>
+          <span className="eyebrow absolute right-2.5 top-2 z-[1] text-ochre">
+            the ink
+          </span>
+        </div>
+        <figcaption className="caption mt-2 text-[12.5px] leading-relaxed">
+          A 9 × 3.5 mm band of Philodemus, <em>On Gods</em> — unread for two
+          thousand years — seen twice: the carbonized sheet, and the ink the
+          tuned model reads on it. Both frames are real output of the tools in
+          this repository; nothing is illustrated.
+        </figcaption>
+      </figure>
+
       {/* ---- the assay -------------------------------------------------
           One thesis figure, oversized: the depth-band fix is the result the
           rest of the page hangs from. Everything else is a quiet ledger. */}

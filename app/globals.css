@@ -205,9 +205,61 @@ select {
   color: var(--color-void);
 }
 
-/* Respect a stated preference for less motion; nothing here needs to move. */
+/* ---- The reveal ------------------------------------------------------
+   The one animated element in the entire site, and it is data, not
+   decoration: the same band of papyrus seen twice, with an instrument
+   trace sweeping between the sheet and the ink the model reads on it. */
+
+.reveal-ink {
+  /* screen-blend: the map's black is transparent, so the ink burns white
+     ONTO the weave rather than replacing the sheet. Ink on papyrus. */
+  mix-blend-mode: screen;
+  animation: reveal-wipe 18s linear infinite;
+  will-change: clip-path, opacity;
+}
+
+.reveal-trace {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-ochre);
+  box-shadow: 0 0 14px 1px color-mix(in srgb, var(--color-ochre) 65%, transparent);
+  animation: reveal-trace 18s linear infinite;
+  will-change: left, opacity;
+}
+
+@keyframes reveal-wipe {
+  0%   { clip-path: inset(0 100% 0 0); opacity: 1; }
+  36%  { clip-path: inset(0 0% 0 0); opacity: 1; }
+  62%  { clip-path: inset(0 0% 0 0); opacity: 1; }
+  70%  { clip-path: inset(0 0% 0 0); opacity: 0; }
+  71%  { clip-path: inset(0 100% 0 0); opacity: 0; }
+  78%  { clip-path: inset(0 100% 0 0); opacity: 1; }
+  100% { clip-path: inset(0 100% 0 0); opacity: 1; }
+}
+
+@keyframes reveal-trace {
+  0%   { left: 0%; opacity: 0; }
+  2%   { opacity: 1; }
+  36%  { left: 100%; opacity: 1; }
+  40%  { left: 100%; opacity: 0; }
+  100% { left: 100%; opacity: 0; }
+}
+
+/* Respect a stated preference for less motion; the reveal becomes a still
+   split — sheet on the left, ink on the right — and nothing else moves. */
 @media (prefers-reduced-motion: reduce) {
   * {
     transition-duration: 0.01ms !important;
+  }
+  .reveal-ink {
+    animation: none;
+    clip-path: inset(0 0 0 50%);
+  }
+  .reveal-trace {
+    animation: none;
+    left: 50%;
+    opacity: 0.7;
   }
 }
