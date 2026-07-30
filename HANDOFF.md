@@ -1,6 +1,101 @@
 # HANDOFF — read this first
 
-## ⚡⚡ LATEST (2026-07-30) — THE CALIBRATED HUNT. Read `findings/CALIBRATED_HUNT.md`.
+## ⚡⚡⚡ LIVE STATE (2026-07-30 late) — PODS MAY BE RUNNING. ACT ON THIS FIRST.
+
+**A PHerc0500P2 fleet was IN FLIGHT when this was written** — 5 pods, $0.69/hr
+each: hub `novnv95wlh054y`, workers `k8u6o3eowqaxgf` `s5rahah374ryrv`
+`sg4kmun75ir5z0` `l40ouljol8p6r2`. 38 segments, base iter-5, aims
+0.35/0.20/0.08, output to `out/p0500p2/`. FIRST ACTIONS of any successor:
+
+```bash
+SCROLL=PHerc0500P2 OUTDIR=p0500p2 python3 tools/fleet_lostbook.py status
+SCROLL=PHerc0500P2 OUTDIR=p0500p2 python3 tools/fleet_lostbook.py harvest
+SCROLL=PHerc0500P2 OUTDIR=p0500p2 python3 tools/fleet_lostbook.py terminate  # ALWAYS
+```
+Verify zero billing after: `GET /v1/pods` must show no RUNNING pod — and check
+`runtime` presence per pod, NOT `desiredStatus`: one pod tonight sat RUNNING
+for an hour, billing, with no GPU ever assigned (the zombie lesson).
+
+**Then the analysis chain, in this order (each env-selected by SCROLL):**
+```bash
+SCROLL=PHerc0500P2 python3 tools/calibrate_floor.py       # CHECK AUC FIRST ->
+#   if AUC vs published calls << 0.80, the z27 depth band is WRONG for this
+#   scroll (verified only on Scroll1+0139) — sweep z before believing anything
+SCROLL=PHerc0500P2 python3 tools/letterscale_0139.py       # detector + power
+SCROLL=PHerc0500P2 python3 tools/condition_control_0139.py # ink vs preservation
+SCROLL=PHerc0500P2 python3 tools/hunt_0139.py              # + mandatory spatial null
+SCROLL=PHerc0500P2 python3 tools/evidence_hunt.py          # render for William
+```
+Survivors (if any) go to William's eyes as renders BEFORE being believed.
+
+### What changed today, newest first
+
+- **THE INSTRUMENT IS SCROLL-AGNOSTIC.** `HANDS` table in
+  `tools/differential_0139.py` = per-scribe hand + gate mode; everything
+  (fleet, floor, detector, control, hunt, harness) selects by `SCROLL` env.
+  Knobs: `OUTDIR`, `WEIGHTS=none|tuned`, `AIMS`, `ONLY`, `MIN_CLUSTERS`,
+  `CLEAR_MM`, `MODE`. Calibration harness passes 7/7 on both shape (Scroll 1)
+  and envelope (0139) modes: `SCROLL=... python3 tools/test_differential.py`.
+
+- **HAND MEASUREMENT: the component method is BROKEN and one of our own
+  numbers was wrong.** Component-based letter height on binarized maps
+  fragments letters into strokes — it reads Scroll 1's known 3.00 mm hand as
+  0.58 mm. `tools/measure_hand.py` (band-FWHM: fold the map on its line
+  pitch, width at half max) validates at **2.94 mm vs the known 3.00**.
+  CONSEQUENCE: **0139's hand is ~1.61 mm, not the 1.09 mm recorded below**
+  (same broken method — the 1.09 figure is superseded everywhere it appears).
+  First measurements, all validated-method: **0500P2 1.92 / 0343P 1.67 /
+  1667 1.63 / 0814 1.28 mm** (`findings/hands.json`). The library writes
+  SMALL: Scroll 1's 3 mm is the outlier, and everything else sits between the
+  model's 0.29 mm output grid and the ~2 mm where stroke shape resolves.
+  That band is why searches return mass, not letterforms.
+
+- **SCROLL 1: QUIET, at the strongest sensitivity yet.** 50 segments mapped
+  (fleet of 5; capacity ran out at pod 6 of 8, so 30 segs uncovered). Detector
+  at the 3 mm hand: **AUC 0.986, 97.8% per-letter, condition control HOLDS at
+  0.988** — the ink-vs-preservation separation reproduced on a second scribe.
+  5 single-cluster candidates; ALL died the spatial null (22–24/24 rolls),
+  and stayed dead with the keep-out swept 1.5→0.6 mm to hunt right against
+  the text. A read scroll, honestly re-searched, honestly silent.
+
+- **Fleet plumbing lessons (all fixed in tools):** Scroll 1's published ds8
+  ink JPEGs are 200+ MP → PIL's decompression-bomb guard kills whole segments
+  (lift `Image.MAX_IMAGE_PIXELS`); low coverage aims land OFF-SHEET on big
+  segments (the differential wants uncalled sheet BESIDE text — aim high);
+  zombie pods bill without GPUs (check `runtime`, not `desiredStatus`);
+  keep-out must be a FIXED physical distance (~1.5 mm, the blend kernel),
+  never proportional to the hand (2×BOX at 3 mm = no legal null anywhere).
+
+- **THE SITE (deadline material, live):** slice-site-alpha.vercel.app now
+  carries **/record** — the campaign's public results page (thesis figure
+  0.654→0.944, calibrated-hunt plate, corrections ledger with struck-not-
+  erased retractions, per-scribe hands, physics table) and **the reveal
+  banner**: an 18 s instrument-trace wipe where the tuned model's ink burns
+  onto the real papyrus band (screen blend, both frames real data, the site's
+  only animation; reduced-motion gets a still split). Viewer masthead links
+  it. Deploy runbook: rsync to `~/slice-site` (exclude tools/findings/md) →
+  `vercel deploy --prod --yes`.
+
+- **DEADLINE: July 31 23:59 PT is TOMORROW. Repo flip + Discord post remain
+  William's two clicks.** Realistic tier this month: $1,000–$2,500 (usage,
+  the heaviest criterion, starts at zero until it ships); August 31 is the
+  real swing. The post should lead with the /record URL.
+
+### Where new ink actually stands after tonight
+
+0139: quiet (77 windows, calibrated). Scroll 1: quiet (37 usable windows,
+97.8% sensitivity — but it is the READ scroll; new ink was always unlikely).
+In flight: 0500P2 (38 segs, largest unworked hand at 1.92 mm, never searched
+by anyone). Remaining lanes, in order of promise: (1) 0500P2 + 0343P + 0814
+with this instrument; (2) per-scribe fine-tune on each (bought +0.09 AUC on
+0139; would push the sub-2 mm hands toward resolvability — `pod_train2.py`
+recipe); (3) the 0139 title segment at native res; (4) Scroll 1's uncovered
+30 segments. PHerc0172/1447 stay physically blind (1.9/1.7 voxels through
+the ink). The 13 scrolls with no surface volumes stay blocked on
+segmentation, not on us.
+
+## ⚡⚡ EARLIER TODAY (2026-07-30) — THE CALIBRATED HUNT. Read `findings/CALIBRATED_HUNT.md`.
+### (0139 hand figure of 1.09 mm below is SUPERSEDED — validated measure is 1.61 mm)
 
 **No new letters. But the instrument is finally honest, and two prior results
 are WITHDRAWN.**
