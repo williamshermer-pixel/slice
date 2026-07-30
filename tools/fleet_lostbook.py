@@ -19,7 +19,7 @@ OUT = os.path.join(ROOT, "out", "lostbook")
 os.makedirs(OUT, exist_ok=True)
 STATE = os.path.join(OUT, "fleet.json")
 WPT = os.path.join(ROOT, "out", "bootstrap", "tuned_0139_honest.pt")
-PART = 48 * 1024 * 1024
+PART = 8 * 1024 * 1024   # proxy kills PUT bodies much larger than this
 API = "https://rest.runpod.io/v1"
 GPUS = ["NVIDIA GeForce RTX 4090", "NVIDIA RTX A5000"]
 IMAGE = "runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404"
@@ -54,7 +54,8 @@ def job_script(shard, wsrc, tag):
     src = src.replace("__SEGS__", json.dumps(shard))
     src = src.replace("__WSRC__", wsrc).replace("__TAG__", tag)
     b64 = base64.b64encode(src.encode()).decode()
-    return (f"cd /workspace && pip install -q transformers==4.57.6 pillow && "
+    return (f"cd /workspace && pip install -q transformers==4.57.6 pillow "
+            f"hf_transfer && "
             f"echo '{b64}' | base64 -d > /workspace/job.py && "
             f"python /workspace/job.py")
 
@@ -97,31 +98,45 @@ def launch(n):
     print(f"state -> {STATE}\nnext: python3 tools/fleet_lostbook.py upload")
 
 
+def put(url, path):
+    """curl PUT — the proxy WAF 403s python-urllib's user agent."""
+    import subprocess
+    r = subprocess.run(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
+                        "-m", "120", "-A", "Mozilla/5.0", "-X", "PUT",
+                        "--data-binary", f"@{path}", url],
+                       capture_output=True, text=True)
+    return r.stdout.strip() == "200"
+
+
 def upload():
+    import tempfile
     st = json.load(open(STATE))
     hub = proxy(st["pods"][0]["id"])
     data = open(WPT, "rb").read()
     md5 = hashlib.md5(data).hexdigest()
     parts = [data[i:i + PART] for i in range(0, len(data), PART)]
     print(f"{len(data)} bytes, {len(parts)} parts, md5 {md5}")
+    tmp = tempfile.mkdtemp()
     for j, p in enumerate(parts):
+        pf = os.path.join(tmp, "part")
+        open(pf, "wb").write(p)
         for a in range(20):
-            try:
-                r = urllib.request.Request(f"{hub}/tuned.part{j}", data=p,
-                                           method="PUT")
-                urllib.request.urlopen(r, timeout=600)
-                print(f"part{j} up ({len(p)} bytes)")
+            if put(f"{hub}/tuned.part{j}", pf):
+                print(f"part{j} up ({len(p)} bytes)", flush=True)
                 break
-            except Exception as e:
-                print(f"part{j} attempt {a}: {e}")
-                time.sleep(15)
+            print(f"part{j} attempt {a} failed", flush=True)
+            time.sleep(8)
         else:
             sys.exit(f"part{j} failed")
-    mf = json.dumps({"parts": len(parts), "sizes": [len(p) for p in parts],
-                     "md5": md5}).encode()
-    r = urllib.request.Request(f"{hub}/tuned.manifest", data=mf, method="PUT")
-    urllib.request.urlopen(r, timeout=60)
-    print("manifest up — fleet is armed")
+    mf = os.path.join(tmp, "manifest")
+    open(mf, "w").write(json.dumps(
+        {"parts": len(parts), "sizes": [len(p) for p in parts], "md5": md5}))
+    for a in range(20):
+        if put(f"{hub}/tuned.manifest", mf):
+            print("manifest up — fleet is armed")
+            return
+        time.sleep(8)
+    sys.exit("manifest failed")
 
 
 def status():

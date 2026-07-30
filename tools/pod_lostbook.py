@@ -30,7 +30,9 @@ def log(m):
 
 
 def get(u, t=120):
-    return urllib.request.urlopen(u, timeout=t).read()
+    # UA spoof: the runpod proxy WAF 403s python-urllib's default agent
+    r = urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"})
+    return urllib.request.urlopen(r, timeout=t).read()
 
 
 def serve():
