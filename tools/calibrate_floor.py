@@ -18,6 +18,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import differential_0139 as D
+ROOT = D.ROOT
 
 
 def main():
@@ -91,7 +92,8 @@ def main():
                    blank_q={str(q): round(float(np.percentile(blank_all, q)), 4)
                             for q in qs}),
               open(os.path.join(D.LB, "floor.json"), "w"), indent=1)
-    print(f"\nwritten to out/lostbook/floor.json — differential reads it")
+    print("\nwritten to " + os.path.relpath(
+        os.path.join(D.LB, "floor.json"), ROOT) + " — differential reads it")
 
 
 if __name__ == "__main__":

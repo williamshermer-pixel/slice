@@ -53,10 +53,13 @@ def main():
         windows += 1
         ours = np.load(mp)
         bm = boxmean(ours, BOX)
-        # blank-papyrus box positions: the whole BOX must be uncalled
+        # Blank-papyrus box positions. At a 3 mm box on dense text NO box is
+        # 100% uncalled, so requiring 0.999 returns an EMPTY null and the
+        # calibration dies. Allow a 1% called fraction: still blank sheet by
+        # any reading, and it keeps the null populated at every hand size.
         pubblank = (pub < 60).astype(np.float32)
         blankfrac = boxmean(pubblank, BOX)
-        blank_ok = blankfrac > 0.999
+        blank_ok = blankfrac > 0.99
         bs = bm[blank_ok]
         if bs.size > 20000:
             bs = np.random.default_rng(3).choice(bs, 20000, replace=False)
@@ -72,6 +75,10 @@ def main():
             break
 
     ink = np.array(ink_scores, np.float32)
+    if not blank_scores or not ink.size:
+        sys.exit(f"empty population (ink {len(ink_scores)}, blank sets "
+                 f"{len(blank_scores)}) — box {BOX}px may exceed the blank "
+                 f"area available at this hand")
     blank = np.concatenate(blank_scores)
     print(f"letter-scale box {BOX}px ({BOX/D.MM:.2f} mm) over {windows} windows")
     print(f"{ink.size} known letters vs {blank.size} blank-papyrus boxes\n")
