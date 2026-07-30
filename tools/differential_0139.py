@@ -28,16 +28,34 @@ TARGETS = {t["seg"]: t for t in
 _ink_cache = {}
 
 
+def fetch(u, t=120):
+    r = urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"})
+    return urllib.request.urlopen(r, timeout=t).read()
+
+
 def pub_crop(meta):
-    """Published ink map crop aligned to our pred (1024^2 at UM_PER_PX)."""
+    """Published ink map crop aligned to our pred (1024^2 at UM_PER_PX).
+
+    ds is measured (volume width / jpeg width, ~8.000 but not exactly) so the
+    crop cannot drift against our canvas-coordinate window.
+    """
     t = TARGETS[meta["seg"]]
     if t["seg"] not in _ink_cache:
-        raw = urllib.request.urlopen(f"{B}/{t['ink']}", timeout=120).read()
-        a = np.array(Image.open(io.BytesIO(raw))).astype(np.float32)
-        _ink_cache[t["seg"]] = a.mean(2) if a.ndim == 3 else a
-    ink = _ink_cache[t["seg"]]
+        a = np.array(Image.open(io.BytesIO(fetch(f"{B}/{t['ink']}")))
+                     ).astype(np.float32)
+        if a.ndim == 3:
+            a = a.mean(2)
+        WW = json.loads(fetch(f"{B}/{t['sv']}0/.zarray").decode())["shape"][2]
+        _ink_cache[t["seg"]] = (a, WW / a.shape[1])
+    ink, ds = _ink_cache[t["seg"]]
     y0, x0, R = meta["window"]
-    c = ink[y0 // 8:(y0 + R) // 8, x0 // 8:(x0 + R) // 8]
+    iy0, ix0 = int(round(y0 / ds)), int(round(x0 / ds))
+    n = int(round(R / ds))
+    c = ink[iy0:iy0 + n, ix0:ix0 + n]
+    if c.shape != (n, n):                      # clamp at segment edge
+        pad = np.zeros((n, n), np.float32)
+        pad[:c.shape[0], :c.shape[1]] = c
+        c = pad
     return np.array(Image.fromarray(c).resize((1024, 1024), Image.BILINEAR))
 
 
@@ -62,10 +80,25 @@ def components(mask):
                     lab[ny, nx] = cur
                     stack.append((ny, nx))
         ys = [p[0] for p in px]; xs = [p[1] for p in px]
+        h, w = max(ys) - min(ys) + 1, max(xs) - min(xs) + 1
         comps.append(dict(area=len(px), y0=min(ys), y1=max(ys),
                           x0=min(xs), x1=max(xs),
-                          cy=float(np.mean(ys)), cx=float(np.mean(xs))))
+                          cy=float(np.mean(ys)), cx=float(np.mean(xs)),
+                          fill=round(len(px) / float(h * w), 3),
+                          aspect=round(w / float(h), 3)))
     return comps
+
+
+def is_strokelike(c):
+    """SHAPE gate — the discrimination every prior candidate failed.
+
+    Letters are thin strokes inside their bounding box; damage patches and
+    merged model blocks are solid. Measured on Scroll 1's real letterforms,
+    ink components fill 15-55% of their box and sit near square aspect.
+    A solid square (fill ~1.0) is a condition patch or a grid artifact,
+    which is precisely what killed the Zone and the fleet-day candidates.
+    """
+    return 0.12 <= c["fill"] <= 0.60 and 0.35 <= c["aspect"] <= 2.8
 
 
 def rhythm(mask, comps):
@@ -95,20 +128,36 @@ def defog(p):
     return sharp.astype(np.uint8)
 
 
+def hot_mask(ours):
+    """Top-(100-OURS_PCT)% of our map. Guards the saturation case: when many
+    pixels tie at the max, `> p96` is EMPTY and the search goes silently
+    blind, so fall back to >= on the same threshold."""
+    thr = np.percentile(ours, OURS_PCT)
+    hot = ours > thr
+    if not hot.any():
+        hot = ours >= thr
+    return hot
+
+
+def gate(ours, pub):
+    """The differential gates. Production path — the calibration harness
+    calls THIS, so the test can never drift from what judges real maps."""
+    mask = hot_mask(ours) & (pub < PUB_COLD)
+    sized = [c for c in components(mask)
+             if c["area"] >= 200
+             and LETTER_LO <= max(c["y1"]-c["y0"], c["x1"]-c["x0"]) <= LETTER_HI]
+    comps = [c for c in sized if is_strokelike(c)]
+    return mask, comps, rhythm(mask, comps), len(sized)
+
+
 def analyze(mp):
     tag = os.path.basename(mp)[4:-4]          # sX_si_wi
     meta = json.load(open(os.path.join(LB, f"meta_{tag}.json")))
     ours = np.load(mp)
     pub = pub_crop(meta)
-    hot = ours > np.percentile(ours, OURS_PCT)
-    cold = pub < PUB_COLD
     called = pub > 128
-    mask = hot & cold
-    comps = [c for c in components(mask)
-             if c["area"] >= 200
-             and LETTER_LO <= max(c["y1"]-c["y0"], c["x1"]-c["x0"]) <= LETTER_HI]
+    mask, comps, r, n_sized = gate(ours, pub)
     n = len(comps)
-    r = rhythm(mask, comps)
     # line-end signature: comps within one line pitch of called text
     adj = 0.0
     if n and called.any():
@@ -122,9 +171,10 @@ def analyze(mp):
     passes = 2 <= n <= 9
     score = (n if passes else 0) * (1 + r) * (1 + adj)
     return dict(tag=tag, seg=meta["seg"].split("/")[-2], aim=meta["aim"],
-                window=meta["window"], n_comps=n, rhythm=round(r, 3),
-                adjacency=round(adj, 3), passes=bool(passes),
-                score=round(float(score), 3)), ours, pub, mask, comps
+                window=meta["window"], n_comps=n, n_sized=n_sized,
+                rhythm=round(r, 3), adjacency=round(adj, 3),
+                passes=bool(passes), score=round(float(score), 3),
+                fills=[c["fill"] for c in comps]), ours, pub, mask, comps
 
 
 def render(res, ours, pub, mask, comps, path):
@@ -145,7 +195,8 @@ def render(res, ours, pub, mask, comps, path):
     row.paste(ov, (3*W, 28))
     hd = ImageDraw.Draw(row)
     hd.text((8, 7), f"{res['seg']}  aim {res['aim']:.2f}  "
-            f"comps {res['n_comps']}  rhythm {res['rhythm']}  "
+            f"sized {res['n_sized']}->stroke {res['n_comps']}  "
+            f"fill {res['fills']}  rhythm {res['rhythm']}  "
             f"adj {res['adjacency']}  |  papyrus - published - ours(defog) - "
             f"differential", fill=(233, 229, 219))
     row.save(path)
