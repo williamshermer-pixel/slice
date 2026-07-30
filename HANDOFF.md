@@ -33,6 +33,20 @@ implement the reader per `findings/READER_DESIGN.md` (calibration
 harness FIRST); (4) harvest the honest-bootstrap A/B if pod
 ju1gcx1wkrg6gq finished (then TERMINATE IT — check `GET /v1/pods`).
 
+**LATE ADD — honest bootstrap A/B: 0.850 → 0.944 (+0.094) on held-out
+0139 text with the FIXED renderer.** The tuned model now reads the lost
+book's known text at Scroll-1-letters level. Weights:
+`out/bootstrap/tuned_0139_honest.pt` (+ holdout maps beside it). This
+upgrades the reader's odds on 0139 substantially — the differential and
+envelope-mode work should use THIS model's maps.
+
+**Repo state:** everything committed & pushed to the PRIVATE GitHub
+(`williamshermer-pixel/slice`, commit b455d4e): all tools/, findings/
+(incl. SUBMISSION_DRAFT v2, READER_DESIGN, key renders in
+findings/renders/). out/, *.npy, *.pt, mesh tifs are gitignored (big
+binaries live on disk only — the tuned weights are NOT in git). Going
+PUBLIC is the submission step, William's two clicks.
+
 **House rules:** render before believing; every finding goes to William's
 eyes; per-scribe calibration always; no generative models on evidence;
 publish negatives; terminate pods.
