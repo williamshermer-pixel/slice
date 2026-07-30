@@ -605,9 +605,14 @@ export default function SliceViewer() {
             Herculaneum micro-CT, streamed from the open bucket. Nothing downloaded.
           </p>
         </div>
-        <div className="hidden text-right sm:block">
-          <p className="eyebrow">Specimen</p>
-          <p className="font-display text-xl text-papyrus">{specimen.label}</p>
+        <div className="flex items-end gap-6">
+          <a href="/record" className="btn whitespace-nowrap">
+            The Record
+          </a>
+          <div className="hidden text-right sm:block">
+            <p className="eyebrow">Specimen</p>
+            <p className="font-display text-xl text-papyrus">{specimen.label}</p>
+          </div>
         </div>
       </header>
 
