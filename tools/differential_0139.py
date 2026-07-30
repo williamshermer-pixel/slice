@@ -25,11 +25,20 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # that error produced two retractions in this project.
 HANDS = {
     # scroll:      (outdir,   letter_mm, lo_mm, hi_mm, adv_mm, pitch_mm, mode)
-    # mode: "shape" where the model resolves stroke structure (3 mm hand);
-    # "envelope" where it only resolves letter-sized mass (measured on 0139:
-    # shape recovers 9.9% of known letters there, too blind to interpret).
-    "PHerc0139":   ("lostbook", 1.09, 0.70, 2.20, 0.70, 4.57, "envelope"),
+    # Letter height measured by tools/measure_hand.py via BAND FWHM, validated
+    # against Scroll 1's independently known 3.00 mm hand (tool reads 2.94).
+    # Component-based heights are WRONG here -- binarized maps fragment letters
+    # and the same method reads Scroll 1 as 0.58 mm.
+    # mode: "shape" needs stroke structure and only works well above ~2 mm,
+    # since the model emits predictions on a 0.29 mm grid; "envelope" reads
+    # letter-sized mass and is the honest setting below that.
     "PHercParis4": ("scroll1",  3.00, 1.80, 4.60, 1.86, 6.18, "shape"),
+    # 0139: recorded as 1.09 mm from the broken component method; band FWHM
+    # says 1.61 mm. Using the corrected figure.
+    "PHerc0139":   ("lostbook", 1.61, 1.00, 2.70, 1.03, 4.32, "envelope"),
+    "PHerc0500P2": ("p0500p2",  1.92, 0.91, 3.35, 1.23, 2.82, "envelope"),
+    "PHerc0343P":  ("p0343p",   1.67, 0.64, 2.96, 1.07, 3.46, "envelope"),
+    "PHerc0814":   ("p0814",    1.28, 0.71, 2.40, 0.82, 3.30, "envelope"),
 }
 SCROLL = os.environ.get("SCROLL", "PHerc0139")
 if SCROLL not in HANDS:
