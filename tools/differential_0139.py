@@ -12,6 +12,10 @@ import glob, io, json, os, urllib.request
 import numpy as np
 from PIL import Image, ImageDraw
 
+# Scroll 1 ds8 ink maps are 200+ MP, above PIL's decompression-bomb
+# guard. Trusted reads from the project's own public bucket.
+Image.MAX_IMAGE_PIXELS = None
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # --- per-scribe configuration ------------------------------------------

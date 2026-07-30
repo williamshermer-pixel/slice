@@ -13,7 +13,7 @@ import numpy as np
 SEGS = __SEGS__
 WSRC = "__WSRC__"          # "local": parts arrive by PUT; else hub base URL
 TAG = "__TAG__"
-AIMS = [0.30, 0.12, 0.04]
+AIMS = __AIMS__   # injected: coverage targets for the aimed windows
 B = "https://vesuvius-challenge-open-data.s3.us-east-1.amazonaws.com"
 OUT = "/workspace/out"
 WPT = "/workspace/tuned.pt"
@@ -183,6 +183,9 @@ def run_window(model, torch, t, D, wi, aim, cy0, cx0, cov, si):
 def main():
     threading.Thread(target=serve, daemon=True).start()
     from PIL import Image
+    # Scroll 1's published ds8 ink maps run 200+ MP, above PIL's bomb guard.
+    # These are trusted reads from the project's own public bucket.
+    Image.MAX_IMAGE_PIXELS = None
     import torch
     from transformers import AutoModel
     model = AutoModel.from_pretrained("scrollprize/PHerc.1667-iteration-5",

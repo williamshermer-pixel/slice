@@ -22,6 +22,11 @@ os.makedirs(OUT, exist_ok=True)
 STATE = os.path.join(OUT, "fleet.json")
 # "none" => base iter-5, correct for any scroll we have not fine-tuned on.
 WEIGHTS = os.environ.get("WEIGHTS", "tuned")
+# Coverage targets. Low aims land OFF-SHEET on large segments (Scroll 1
+# margins fetch sparse), and the differential does not need empty
+# windows: a 30%-covered text window is 70% uncalled sheet, which IS
+# the hunting ground. Raise the aims on big-segment scrolls.
+AIMS = os.environ.get("AIMS", "0.30,0.12,0.04")
 WPT = os.path.join(ROOT, "out", "bootstrap", "tuned_0139_honest.pt")
 PART = 8 * 1024 * 1024   # proxy kills PUT bodies much larger than this
 API = "https://rest.runpod.io/v1"
@@ -50,13 +55,20 @@ def api(method, path, body=None):
 
 def segs():
     t = json.load(open(os.path.join(ROOT, "findings", "targets.json")))
-    return [s for s in t if s["scroll"] == SCROLL]
+    ss = [s for s in t if s["scroll"] == SCROLL]
+    only = os.environ.get("ONLY")   # comma-separated seg substrings
+    if only:
+        keys = [k for k in only.split(",") if k]
+        ss = [s for s in ss if any(k in s["seg"] for k in keys)]
+    return ss
 
 
 def job_script(shard, wsrc, tag):
     src = open(os.path.join(ROOT, "tools", "pod_lostbook.py")).read()
     src = src.replace("__SEGS__", json.dumps(shard))
     src = src.replace("__WSRC__", wsrc).replace("__TAG__", tag)
+    src = src.replace("__AIMS__",
+                      json.dumps([float(a) for a in AIMS.split(",")]))
     b64 = base64.b64encode(src.encode()).decode()
     return (f"cd /workspace && pip install -q transformers==4.57.6 pillow "
             f"hf_transfer && "
