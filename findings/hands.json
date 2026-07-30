@@ -1,0 +1,68 @@
+{
+ "PHerc0500P2": {
+  "scroll": "PHerc0500P2",
+  "letter_mm": 1.92,
+  "lo": 0.91,
+  "hi": 5.03,
+  "advance_mm": 1.23,
+  "pitch_mm": 2.82,
+  "mode": "envelope",
+  "n": 6,
+  "segs": 6
+ },
+ "PHerc0814": {
+  "scroll": "PHerc0814",
+  "letter_mm": 1.28,
+  "lo": 0.71,
+  "hi": 7.1,
+  "advance_mm": 0.82,
+  "pitch_mm": 3.3,
+  "mode": "envelope",
+  "n": 6,
+  "segs": 6
+ },
+ "PHercParis4": {
+  "scroll": "PHercParis4",
+  "letter_mm": 2.94,
+  "lo": 1.81,
+  "hi": 4.74,
+  "advance_mm": 1.88,
+  "pitch_mm": 6.69,
+  "mode": "shape",
+  "n": 6,
+  "segs": 6
+ },
+ "PHerc0139": {
+  "scroll": "PHerc0139",
+  "letter_mm": 1.61,
+  "lo": 0.99,
+  "hi": 2.7,
+  "advance_mm": 1.03,
+  "pitch_mm": 4.32,
+  "mode": "envelope",
+  "n": 6,
+  "segs": 6
+ },
+ "PHerc0343P": {
+  "scroll": "PHerc0343P",
+  "letter_mm": 1.67,
+  "lo": 0.45,
+  "hi": 4.45,
+  "advance_mm": 1.07,
+  "pitch_mm": 3.46,
+  "mode": "envelope",
+  "n": 6,
+  "segs": 6
+ },
+ "PHerc1667": {
+  "scroll": "PHerc1667",
+  "letter_mm": 1.63,
+  "lo": 1.05,
+  "hi": 3.24,
+  "advance_mm": 1.04,
+  "pitch_mm": 1.63,
+  "mode": "envelope",
+  "n": 6,
+  "segs": 6
+ }
+}
