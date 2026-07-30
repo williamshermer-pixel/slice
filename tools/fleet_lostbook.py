@@ -139,13 +139,22 @@ def upload():
     sys.exit("manifest failed")
 
 
+def cget(url, dst=None, t=180):
+    """curl GET — WAF-safe (python-urllib's UA is 403'd by the proxy)."""
+    import subprocess
+    a = ["curl", "-s", "-f", "-m", str(t), "-A", "Mozilla/5.0", url]
+    if dst:
+        a += ["-o", dst]
+    r = subprocess.run(a, capture_output=True)
+    return (r.returncode == 0, r.stdout)
+
+
 def status():
     st = json.load(open(STATE))
     for p in st["pods"]:
         try:
-            pr = urllib.request.urlopen(
-                f"{proxy(p['id'])}/out/progress.txt", timeout=20
-            ).read().decode().strip().splitlines()
+            ok, body = cget(f"{proxy(p['id'])}/out/progress.txt", t=20)
+            pr = body.decode().strip().splitlines() if ok else []
             done = "DONE" in (pr[-1] if pr else "")
             print(f"{p['name']}: {len(pr)} lines | {pr[-1] if pr else '(empty)'}"
                   + (" [DONE]" if done else ""))
@@ -169,12 +178,12 @@ def harvest():
             for nm in names:
                 perpod = nm in ("progress.txt", "done.json", "error.txt")
                 dst = os.path.join(OUT, f"{p['tag']}_{nm}" if perpod else nm)
-                try:
-                    b = urllib.request.urlopen(f"{base}/out/{nm}", timeout=120).read()
-                    open(dst, "wb").write(b)
+                if os.path.exists(dst) and nm.endswith(".npy"):
+                    continue                      # already harvested
+                if cget(f"{base}/out/{nm}", dst)[0]:
                     got += 1
-                except Exception:
-                    pass
+                elif os.path.exists(dst):
+                    os.remove(dst)                # curl -f leaves empties
         except Exception as e:
             print(f"{p['name']}: {e}")
     print(f"harvested {got} files -> {OUT}")
