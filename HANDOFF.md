@@ -1,6 +1,51 @@
 # HANDOFF — read this first
 
-## ⚡ STATE OF THE WORLD (2026-07-29 end — read THIS if you read nothing else)
+## ⚡⚡ LATEST (2026-07-30) — THE CALIBRATED HUNT. Read `findings/CALIBRATED_HUNT.md`.
+
+**No new letters. But the instrument is finally honest, and two prior results
+are WITHDRAWN.**
+
+- **The 2026-07-29 differential is withdrawn.** Its "9 of 22 segments carry
+  letter-sized our-hot/theirs-cold structure" used a RELATIVE threshold
+  (top 4% of our map) with no null. Re-run tonight it produced 3 candidates and
+  **23 of 24 spatial-null rolls reproduced them** (p up to 0.92). A relative
+  threshold selects 4% of pixels whether ink exists or not.
+- **Two silent bugs found:** the p96 mask went EMPTY whenever >4% of a map
+  saturated (confident silence on our hottest maps), and published-map
+  alignment assumed 8× downsample vs the true 8.0006.
+- **The replacement instrument, all measured:** letter-scale box mean at his
+  1.09 mm hand — **AUC 0.981**, **77.7% per-letter detection** at 0.1% FPR
+  (per-pixel thresholding managed only 9.9%); **CONDITION-CONTROLLED AUC
+  0.961** with letters **3.8×** above blank sheet of the SAME condition beside
+  them (the ink-vs-preservation separation this project had never achieved);
+  spillover-safe null (≥2 letter-widths from any called pixel); power **99% at
+  five hidden letters**.
+- **Result: 78 windows across all 38 PHerc0139 segments, ONE candidate, ZERO
+  survivors.** The candidate sat in the **title segment**
+  (`20260422000000-title`, 2 clusters, peak 0.382) and died at the spatial null
+  (13/24 rolls matched, p=0.56). The margins of *On Gods* are quiet AT A KNOWN
+  SENSITIVITY — a calibrated negative, not a blind one.
+  `out/lostbook/`, render `out/lostbook/evidence_hunt.png`.
+  **Loose end worth pulling: the title region deserves a dedicated native-res
+  pass, not one margin-aimed window** — titles are the highest-value target on
+  any scroll and this one has never been searched properly.
+- **Bounded by:** the model was fine-tuned on this scroll's own published
+  calls, so it is biased toward agreeing with them; and "known letters" are
+  published-detector output, not human readings — at 1.09 mm neither map
+  resolves letterforms, only letter-sized masses.
+- **NEXT, and it is the strong play:** this detector is scroll-agnostic and
+  never yet aimed at a scroll it can resolve. **Run it on Scroll 1's 3 mm
+  hand** (where our renderer demonstrably draws letterforms) and on 1667/0814
+  at their measured hands. Every published map on every scroll was binarized
+  identically, so the discarded band is the hunting ground everywhere.
+  Tools: `hunt_0139.py` + `letterscale_0139.py` + `condition_control_0139.py`
+  (retarget TARGETS/hand constants), fleet via `fleet_lostbook.py`.
+- Fleet plumbing lesson: the RunPod proxy WAF **403s python-urllib's user
+  agent** (broke upload, pod-side fetch AND harvest — use curl or spoof the
+  UA), kills PUT bodies much over 8 MB, and the current pytorch image needs
+  `pip install hf_transfer`.
+
+## ⚡ STATE OF THE WORLD (2026-07-29 end — superseded above where they conflict)
 
 **What exists:** a PROVEN ink-detection pipeline (streams any scroll from
 the public bucket → production-spec renderer: model
