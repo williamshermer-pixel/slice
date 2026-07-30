@@ -1,0 +1,92 @@
+[
+ {
+  "feature": "offaxis",
+  "raw": 0.3704265153795627,
+  "partial": 0.3813147654768659,
+  "blank_raw": 0.16634124058094932,
+  "blank_partial": 0.17479055464833063,
+  "n": 7,
+  "survives": false
+ },
+ {
+  "feature": "hfenergy",
+  "raw": 0.3916084465290294,
+  "partial": 0.25820165043549115,
+  "blank_raw": 0.06937188891307605,
+  "blank_partial": 0.20032831365014717,
+  "n": 7,
+  "survives": false
+ },
+ {
+  "feature": "chandark",
+  "raw": 0.13529586646111272,
+  "partial": 0.12832905371283085,
+  "blank_raw": 0.03268421097612932,
+  "blank_partial": 0.09446492904008671,
+  "n": 7,
+  "survives": false
+ },
+ {
+  "feature": "sharp",
+  "raw": 0.18697199254796362,
+  "partial": 0.07620115249870413,
+  "blank_raw": 0.33810091113928603,
+  "blank_partial": 0.04516832078142233,
+  "n": 7,
+  "survives": false
+ },
+ {
+  "feature": "disorder",
+  "raw": 0.124553046512027,
+  "partial": 0.03799795977967607,
+  "blank_raw": 0.07665632625423312,
+  "blank_partial": 0.03799795977967607,
+  "n": 7,
+  "survives": false
+ },
+ {
+  "feature": "pca_c1",
+  "raw": 0.13150057231652146,
+  "partial": 0.15172030695235014,
+  "blank_raw": 0.1251121661379442,
+  "blank_partial": 0.05661827494256182,
+  "n": 7,
+  "survives": true
+ },
+ {
+  "feature": "pca_c2",
+  "raw": 0.1772658403213527,
+  "partial": 0.0919943164403009,
+  "blank_raw": 0.16665721927646712,
+  "blank_partial": 0.03250295342979976,
+  "n": 7,
+  "survives": false
+ },
+ {
+  "feature": "pca_c3",
+  "raw": 0.0586287058992093,
+  "partial": 0.0833784930812506,
+  "blank_raw": 0.1390896674125522,
+  "blank_partial": 0.11822548169183504,
+  "n": 7,
+  "survives": false
+ },
+ {
+  "feature": "rti_height",
+  "raw": 0.12381654822514218,
+  "partial": 0.17347006327748093,
+  "blank_raw": 0.11882166770465845,
+  "blank_partial": 0.07644691428215046,
+  "n": 7,
+  "survives": false
+ },
+ {
+  "feature": "rti_specvar",
+  "raw": 0.04715039568638919,
+  "partial": 0.05307462718859098,
+  "blank_raw": 0.0412709819066581,
+  "blank_partial": 0.12262624569580881,
+  "n": 7,
+  "survives": false
+ }
+]

@@ -39,7 +39,12 @@ Image.MAX_IMAGE_PIXELS = None
 
 B = "https://vesuvius-challenge-open-data.s3.us-east-1.amazonaws.com"
 CH = 128
-HOURS = float(sys.argv[1]) if len(sys.argv) > 1 else 8.0
+# Parsed defensively: this module is imported by other tools whose own argv
+# looks nothing like this one's. A bare float(sys.argv[1]) throws at IMPORT
+# time under `dogs.py --run 12 0`, and an importer that wraps it in try/except
+# then silently loses the whole texture feature bank.
+HOURS = (float(sys.argv[1]) if len(sys.argv) > 1 and not sys.argv[1].startswith("-")
+         else 8.0)
 LOG = "nightshift_log.jsonl"
 ALERT = "NIGHTSHIFT_ALERT.md"
 CACHE = "nightshift_targets.json"

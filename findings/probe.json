@@ -1,0 +1,67 @@
+{
+ "depths": [
+  -18,
+  -15,
+  -12,
+  -9,
+  -6,
+  -3,
+  0,
+  3,
+  6,
+  9,
+  12,
+  15,
+  18
+ ],
+ "flags": [
+  {
+   "transform": "level",
+   "best_depth": 6,
+   "r": 0.1259390236979524,
+   "blind_max": 0.12408201083412806,
+   "depth_contrast": 0.07045802417488217,
+   "flag": false
+  },
+  {
+   "transform": "highpass",
+   "best_depth": 18,
+   "r": 0.06270712020883228,
+   "blind_max": 0.046258747056847474,
+   "depth_contrast": 0.03327612663670976,
+   "flag": false
+  },
+  {
+   "transform": "ridge",
+   "best_depth": 15,
+   "r": 0.16177213155873427,
+   "blind_max": 0.07743471875284556,
+   "depth_contrast": 0.0988641966945728,
+   "flag": true
+  },
+  {
+   "transform": "fringe",
+   "best_depth": 15,
+   "r": 0.10767239937797174,
+   "blind_max": 0.060062905624548225,
+   "depth_contrast": 0.04631462457794462,
+   "flag": false
+  },
+  {
+   "transform": "fill",
+   "best_depth": -12,
+   "r": 0.322412983781313,
+   "blind_max": 0.1141997340937364,
+   "depth_contrast": 0.14304014517179456,
+   "flag": true
+  },
+  {
+   "transform": "localsd",
+   "best_depth": -6,
+   "r": -0.20011324183519077,
+   "blind_max": 0.19004241504636993,
+   "depth_contrast": 0.0774185619610899,
+   "flag": false
+  }
+ ]
+}

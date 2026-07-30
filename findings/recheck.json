@@ -1,0 +1,42 @@
+[
+ {
+  "name": "offaxis+hfenergy+chandark",
+  "heldout": 0.3705779640670934,
+  "blank": 0.12347572785534269,
+  "blind": 0.10820034708700471,
+  "n_held": 8,
+  "n_blank": 8,
+  "n_blind": 6,
+  "alive": false
+ },
+ {
+  "name": "offaxis+hfenergy",
+  "heldout": 0.3331778085091348,
+  "blank": 0.17714796639229624,
+  "blind": 0.10495536650212454,
+  "n_held": 8,
+  "n_blank": 8,
+  "n_blind": 6,
+  "alive": false
+ },
+ {
+  "name": "offaxis",
+  "heldout": 0.35612788472708695,
+  "blank": 0.12721415910212966,
+  "blind": 0.10798310803064919,
+  "n_held": 8,
+  "n_blank": 8,
+  "n_blind": 6,
+  "alive": false
+ },
+ {
+  "name": "disorder+offaxis+sharp",
+  "heldout": 0.21210201785506003,
+  "blank": 0.2215096751069861,
+  "blind": 0.062139293557216084,
+  "n_held": 8,
+  "n_blank": 8,
+  "n_blind": 6,
+  "alive": false
+ }
+]
