@@ -73,6 +73,28 @@ def depth_label(prof, offsets, dlay, floor, shape_hw):
     return ink2d, sharp, centres[np.clip(arg, 0, K - 1)]
 
 
+def sheet_depth(img, lo, hi):
+    """Per-pixel depth of the SHEET, from the crop's own intensity profile.
+
+    Intensity cannot find ink — density contrast through the ink layer is
+    r~0.002, this project's first dead mechanism. But it finds the PAPYRUS
+    plainly (sheet is bright, surrounding volume is not), and ink can only lie
+    on the sheet. Flattening is imperfect, so the sheet drifts in z across a
+    crop; locating it per pixel sharpens depth attribution far past what a
+    62-layer reading window can resolve on its own.
+
+    Returns the intensity-weighted centroid of depth within [lo,hi), which is
+    steadier than an argmax on noisy 8-bit data.
+    """
+    band = img[lo:hi].astype(np.float32)
+    w = band - band.min(axis=0, keepdims=True)
+    tot = w.sum(0)
+    z = np.arange(lo, hi, dtype=np.float32)[:, None, None]
+    cen = np.where(tot > 1e-3, (w * z).sum(0) / np.maximum(tot, 1e-3),
+                   (lo + hi) / 2.0)
+    return cen
+
+
 def build(scroll, calib, profdir):
     floor = json.load(open(os.path.join(calib, "floor.json")))
     ctrl = json.load(open(os.path.join(calib, "condition_control.json")))
@@ -92,86 +114,128 @@ def build(scroll, calib, profdir):
                                              floor["floor"], prof.shape[1:])
         if ink2d.sum() < 200:
             continue
-        # pick the densest CROP-sized tile so the pair is worth training on
+        # Two crops per window, because a training set needs both classes:
+        # the INK-RICH tile (positives) and a NEGATIVE-RICH tile where the
+        # response never approaches the floor at any depth. A crop of pure
+        # dense text carries no certified absence, and absence is half the
+        # supervision.
         q = CROP // 4                                        # in pred px
-        cs = np.pad(ink2d.astype(np.float32), ((1, 0), (1, 0))).cumsum(0).cumsum(1)
-        s = cs[q:, q:] - cs[:-q, q:] - cs[q:, :-q] + cs[:-q, :-q]
-        iy, ix = np.unravel_index(int(s.argmax()), s.shape)
-        y0, x0 = meta["window"][0] + iy * 4, meta["window"][1] + ix * 4
-        y0, x0 = (y0 // CH) * CH, (x0 // CH) * CH             # chunk-aligned
+        peakmap = prof.max(0)
+        blankmap = peakmap < (floor["floor"] * 0.35)
 
-        # ---- image half: fetch exactly this crop, full depth
-        nt = CROP // CH
-        cy0, cx0 = y0 // CH, x0 // CH
-        img = np.zeros((D, CROP, CROP), np.uint8)
-        got = [0]
+        def densest(field):
+            cs = np.pad(field.astype(np.float32),
+                        ((1, 0), (1, 0))).cumsum(0).cumsum(1)
+            bx = cs[q:, q:] - cs[:-q, q:] - cs[q:, :-q] + cs[:-q, :-q]
+            return np.unravel_index(int(bx.argmax()), bx.shape)
 
-        def g(cy, cx):
-            try:
-                b = get(f"{B}/{SV[scroll][meta['seg']]}0/0/{cy}/{cx}")
-                if len(b) == D * CH * CH:
-                    img[:, (cy-cy0)*CH:(cy-cy0+1)*CH,
-                        (cx-cx0)*CH:(cx-cx0+1)*CH] = \
-                        np.frombuffer(b, np.uint8).reshape(D, CH, CH)
-                    got[0] += 1
-            except Exception:
-                pass
-        with cf.ThreadPoolExecutor(max_workers=16) as ex:
-            list(ex.map(lambda p: g(*p),
-                        [(cy0+j, cx0+k) for j in range(nt) for k in range(nt)]))
-        if got[0] < nt * nt:
-            continue
+        picks = [("ink", densest(ink2d))]
+        by, bx_ = densest(blankmap)
+        if abs(by - picks[0][1][0]) + abs(bx_ - picks[0][1][1]) > q // 2:
+            picks.append(("blank", (by, bx_)))
 
-        # ---- label half: TRUE 3D, per-voxel depth from the profile
-        lab = np.zeros((D, CROP, CROP), np.uint8)
-        sub_ink = ink2d[iy:iy+q, ix:ix+q]
-        sub_sharp = sharp[iy:iy+q, ix:ix+q]
-        sub_depth = depth_of[iy:iy+q, ix:ix+q]
-        half = dlay // 4                                     # attribution width
-        for yy in range(q):
-            for xx in range(q):
-                if not sub_ink[yy, xx]:
-                    continue
-                code = 1 if sub_sharp[yy, xx] else 3
-                z = int(sub_depth[yy, xx])
-                lo, hi = max(0, z - half), min(D, z + half)
-                lab[lo:hi, yy*4:(yy+1)*4, xx*4:(xx+1)*4] = code
-        # certified blank: never ink at any depth, comfortably below floor
-        blank2d = prof.max(0)[iy:iy+q, ix:ix+q] < (floor["floor"] * 0.35)
-        for yy, xx in zip(*np.nonzero(blank2d)):
-            lab[:, yy*4:(yy+1)*4, xx*4:(xx+1)*4] = 2
+        for kind, (iy, ix) in picks:
+            if made >= MAXPAIRS:
+                break
+            y0, x0 = meta["window"][0] + iy * 4, meta["window"][1] + ix * 4
+            y0, x0 = (y0 // CH) * CH, (x0 // CH) * CH         # chunk-aligned
 
-        name = f"{meta['seg'].split('/')[-2][:36]}__y{y0}_x{x0}"
-        dst = os.path.join(OUTROOT, scroll, name)
-        attrs = dict(
-            issue="ScrollPrize/villa#192",
-            ready_to_run=True, crop_px=CROP, shape=list(lab.shape),
-            label_codes={"0": "unlabelled", "1": "ink (depth resolved)",
-                         "2": "certified blank",
-                         "3": "ink present, depth ambiguous (flat profile)"},
-            depth_method=("sliding 62-layer model window at offsets "
-                          f"{offs}; ink attributed to the peak-response depth "
-                          f"+/-{half} layers. Effective depth resolution is "
-                          "the offset step, NOT one layer."),
-            scroll=scroll, segment=meta["seg"],
-            window_origin_yx=[y0, x0],
-            floor=floor["floor"], floor_blank_fpr=floor["blank_fpr"],
-            map_auc_vs_published=floor["auc"],
-            condition_control_auc=ctrl["auc_near"],
-            condition_control_meaning=("AUC separating known ink from blank "
-                                       "sheet INSIDE the text block — same "
-                                       "preservation. Directly measures the "
-                                       "surface-confound #192 warns about."),
-            model="scrollprize/PHerc.1667-iteration-5",
-            generator="tools/make_pairs.py", data_licence=ATTRIB)
-        write_zarr(os.path.join(dst, "label"), lab, (D, 256, 256), attrs)
-        write_zarr(os.path.join(dst, "image"), img, (D, 256, 256),
-                   dict(source=meta["seg"], licence=ATTRIB,
-                        note="unmodified surface-volume crop, pairs with label/"))
-        open(os.path.join(dst, "LICENCE-DATA.txt"), "w").write(ATTRIB + "\n")
-        made += 1
-        print(f"  {scroll} {name}: ink {100*(lab==1).mean():.2f}% "
-              f"ambiguous {100*(lab==3).mean():.2f}% blank {100*(lab==2).mean():.1f}%")
+            # ---- image half: fetch exactly this crop, full depth
+            nt = CROP // CH
+            cy0, cx0 = y0 // CH, x0 // CH
+            img = np.zeros((D, CROP, CROP), np.uint8)
+            got = [0]
+
+            def g(cy, cx):
+                try:
+                    b = get(f"{B}/{SV[scroll][meta['seg']]}0/0/{cy}/{cx}")
+                    if len(b) == D * CH * CH:
+                        img[:, (cy-cy0)*CH:(cy-cy0+1)*CH,
+                            (cx-cx0)*CH:(cx-cx0+1)*CH] = \
+                            np.frombuffer(b, np.uint8).reshape(D, CH, CH)
+                        got[0] += 1
+                except Exception:
+                    pass
+            with cf.ThreadPoolExecutor(max_workers=16) as ex:
+                list(ex.map(lambda p: g(*p),
+                            [(cy0+j, cx0+k) for j in range(nt) for k in range(nt)]))
+            if got[0] < nt * nt:
+                continue
+
+            # ---- label half: TRUE 3D, per-voxel depth
+            # Two independent depth signals, intersected:
+            #   model  -> WHERE IN Z the ink response peaks (62-layer resolution)
+            #   sheet  -> where the papyrus physically is, per pixel, from the
+            #             crop's own intensity (sharp, but ink-blind)
+            # Ink lies on the sheet, so the model picks the window and the sheet
+            # picks the layer inside it. Neither alone is enough.
+            lab = np.zeros((D, CROP, CROP), np.uint8)
+            sub_ink = ink2d[iy:iy+q, ix:ix+q]
+            sub_sharp = sharp[iy:iy+q, ix:ix+q]
+            sub_depth = depth_of[iy:iy+q, ix:ix+q]
+            half = dlay // 4                                     # model's reach
+            tight = max(3, dlay // 12)                           # sheet's reach
+            for yy in range(q):
+                for xx in range(q):
+                    if not sub_ink[yy, xx]:
+                        continue
+                    code = 1 if sub_sharp[yy, xx] else 3
+                    z = int(sub_depth[yy, xx])
+                    lo, hi = max(0, z - half), min(D, z + half)
+                    if code == 1 and hi - lo > 2 * tight:
+                        # refine to the sheet inside the model's window
+                        sd = sheet_depth(img[:, yy*4:(yy+1)*4, xx*4:(xx+1)*4],
+                                         lo, hi).mean()
+                        zc = int(round(float(sd)))
+                        lo, hi = max(0, zc - tight), min(D, zc + tight)
+                    lab[lo:hi, yy*4:(yy+1)*4, xx*4:(xx+1)*4] = code
+            # certified blank: never ink at any depth, comfortably below floor
+            blank2d = prof.max(0)[iy:iy+q, ix:ix+q] < (floor["floor"] * 0.35)
+            for yy, xx in zip(*np.nonzero(blank2d)):
+                lab[:, yy*4:(yy+1)*4, xx*4:(xx+1)*4] = 2
+
+            y0, x0 = int(y0), int(x0)      # numpy ints are not JSON-serialisable
+            name = f"{meta['seg'].split('/')[-2][:36]}__{kind}__y{y0}_x{x0}"
+            dst = os.path.join(OUTROOT, scroll, name)
+            attrs = dict(
+                issue="ScrollPrize/villa#192",
+                ready_to_run=True, crop_px=int(CROP), pair_kind=kind,
+                shape=[int(v) for v in lab.shape],
+                label_codes={"0": "unlabelled", "1": "ink (depth resolved)",
+                             "2": "certified blank",
+                             "3": "ink present, depth ambiguous (flat profile)"},
+                depth_method=(
+                    "TWO independent signals, intersected. (1) MODEL: the fixed "
+                    f"62-layer input window is slid to offsets {offs}; each pixel "
+                    "gets a response profile and ink is placed at its PEAK — this "
+                    "localises depth only to the window width. (2) SHEET: within "
+                    "that window, the crop's own intensity profile gives the "
+                    "papyrus surface per pixel (intensity cannot see ink — "
+                    "density contrast r~0.002 — but it sees the sheet, and ink "
+                    f"lies on it), narrowing the label to +/-{tight} layers. "
+                    "Pixels whose model profile is flat are coded 3 (ambiguous) "
+                    "rather than assigned a guessed depth."),
+                depth_resolution_layers=int(2 * tight),
+                scroll=scroll, segment=meta["seg"],
+                window_origin_yx=[int(y0), int(x0)],
+                floor=float(floor["floor"]),
+                floor_blank_fpr=float(floor["blank_fpr"]),
+                map_auc_vs_published=float(floor["auc"]),
+                condition_control_auc=float(ctrl["auc_near"]),
+                condition_control_meaning=("AUC separating known ink from blank "
+                                           "sheet INSIDE the text block — same "
+                                           "preservation. Directly measures the "
+                                           "surface-confound #192 warns about."),
+                model="scrollprize/PHerc.1667-iteration-5",
+                generator="tools/make_pairs.py", data_licence=ATTRIB)
+            write_zarr(os.path.join(dst, "label"), lab, (D, 256, 256), attrs)
+            write_zarr(os.path.join(dst, "image"), img, (D, 256, 256),
+                       dict(source=meta["seg"], licence=ATTRIB,
+                            note="unmodified surface-volume crop, pairs with label/"))
+            open(os.path.join(dst, "LICENCE-DATA.txt"), "w").write(ATTRIB + "\n")
+            made += 1
+            print(f"  {scroll} {name}: ink {100*(lab==1).mean():.2f}% "
+                  f"ambiguous {100*(lab==3).mean():.2f}% blank {100*(lab==2).mean():.1f}%")
     return made
 
 
