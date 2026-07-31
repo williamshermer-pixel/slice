@@ -297,10 +297,14 @@ export default function RecordPage() {
           <Row label="PHerc0139 · line pitch">4.57 mm</Row>
         </div>
         <p className="mt-4 text-ash">
-          A third the size — and below what a model emitting predictions on a
-          0.29 mm grid can resolve into shapes. That is why this book returns
-          letter-sized mass rather than letterforms, and it is a resolution
-          ceiling rather than a rendering failure.
+          Half the size — and the reason this book returns letter-sized mass
+          rather than letterforms is not sampling. Our maps run 9 µm per pixel,
+          so a 1.6 mm letter spans ~178 of them. It is field of view: the
+          model reads a 256 px tile, 578 µm across, which is smaller than one
+          letter at <em className="font-display">every</em> hand measured here.
+          It detects ink locally; letterforms have to emerge from the assembled
+          map. On a 3 mm hand they do. On a 1.6 mm hand the response stays
+          smooth — a property of the detector, not a limit of the scan.
         </p>
       </Section>
 
@@ -345,23 +349,36 @@ export default function RecordPage() {
           per directory, on the surface volume&apos;s own grid.
         </p>
         <div className="ledger mt-4">
-          <Row label="label / codes">0 unlabelled · 1 ink · 2 certified blank</Row>
+          <Row label="each pair">image/ + label/ · 512³ zarr · ready to train</Row>
+          <Row label="label codes">
+            0 unlabelled · 1 ink · 2 certified blank · 3 depth ambiguous
+          </Row>
+          <Row label="depth, measured not projected">
+            sd 4 layers over ~9 distinct centres per crop
+          </Row>
           <Row label="ink floor">calibrated at 0.2% FPR on known-blank sheet</Row>
           <Row label="surface-confound control">
-            AUC 0.96–0.99 curated · 0.84 auto-grown (in every .zattrs)
+            AUC 0.96–0.99 curated · 0.84 auto-grown (in every pair)
           </Row>
-          <Row label="depth">measured band z27..z89 — never full-stack projection</Row>
-          <Row label="negatives">≥1.5 mm from any call, outside model spillover</Row>
-          <Row label="format">zarr v2 / zlib · conf/ carries raw probability</Row>
+          <Row label="QC gate">empty pairs removed, not counted</Row>
         </div>
         <p className="mt-4 text-ash">
-          Generator and pair-fetcher are in the repo
-          (<span className="text-ochre">tools/make_labels_3d.py</span>,{" "}
-          <span className="text-ochre">tools/fetch_pair.py</span>); sample
-          windows in <span className="text-ochre">samples/labels3d/</span>.
-          Scroll data is never redistributed — the image half of each pair is
-          fetched from the public bucket on your machine. Windows on request:
-          generation costs about one GPU-minute each.
+          The model is fixed at 62 input layers and returns a flat map, so depth
+          is <em className="font-display">recovered</em> from two independent
+          signals. Sliding that reading window through the stack gives every
+          pixel a response profile whose peak is the ink&apos;s depth; the
+          crop&apos;s own intensity then locates the sheet inside that window —
+          intensity cannot see ink, but ink can only lie on papyrus. Flat
+          profiles are labelled ambiguous rather than guessed. Our first attempt
+          wrote one image into every layer, which is precisely what the issue
+          asks not to do; it was measured, caught, and thrown away.
+        </p>
+        <p className="mt-3 text-ash">
+          Generator, QC gate and samples are in the repo
+          (<span className="text-ochre">tools/make_pairs.py</span>,{" "}
+          <span className="text-ochre">tools/verify_pairs.py</span>,{" "}
+          <span className="text-ochre">samples/pairs/</span>). Windows on
+          request — profiling costs about one GPU-minute each.
         </p>
       </Section>
 

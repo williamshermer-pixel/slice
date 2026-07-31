@@ -1,0 +1,39 @@
+{
+ "note": "Two representative pairs from out/pairs (full set regenerates via tools/make_pairs.py). Verified by tools/verify_pairs.py.",
+ "pairs": [
+  {
+   "pair": "20250831000000-w040_2025083102__ink__y7808_x7168",
+   "kind": "ink",
+   "ink_columns": 8352,
+   "depth_sd_layers": 5.09,
+   "depth_levels": 12,
+   "ambiguous_columns": 3856,
+   "certified_blank_frac": 0.0,
+   "shape": [
+    116,
+    512,
+    512
+   ],
+   "condition_control_auc": 0.9613,
+   "floor": 0.8942376971244812,
+   "scroll": "PHerc0139"
+  },
+  {
+   "pair": "20250108000003-w028_2025010836__blank__y11392_x17664",
+   "kind": "blank",
+   "ink_columns": 0,
+   "depth_sd_layers": 0.0,
+   "depth_levels": 0,
+   "ambiguous_columns": 0,
+   "certified_blank_frac": 0.645,
+   "shape": [
+    116,
+    512,
+    512
+   ],
+   "condition_control_auc": 0.9613,
+   "floor": 0.8942376971244812,
+   "scroll": "PHerc0139"
+  }
+ ]
+}

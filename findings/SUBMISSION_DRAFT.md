@@ -20,37 +20,39 @@ is measured and reproducible from the repo; nothing is a reading.
 browser viewer, a depth-band bug you may also have, and four scrolls of
 honestly-calibrated negatives**
 
-**The deliverable (issue #192):** machine-generated ink labels with quality
-certificates, as plain zarr v2 (zlib — any zarr client reads them). Per
-window: `label/` uint8 (D×4096×4096) on the surface volume's own grid —
-1 = ink at a calibrated floor, 2 = certified-blank negative — plus `conf/`
-(the raw probability) and `.zattrs` carrying full provenance: source volume,
-window, depth band, floor + measured blank FPR (0.2%), and the
-condition-control AUC. Generator + pair-fetcher in the repo
-(`tools/make_labels_3d.py`, `tools/fetch_pair.py` — the scroll data itself
-is never redistributed). ~180 windows across 4 scrolls to start.
+**The deliverable (issue #192):** ready-to-run image/label pairs as plain
+zarr v2 — `image/` and `label/` together in one directory, 512³ crops, nothing
+to crop or preprocess. Labels are `0` unlabelled / `1` ink / `2` certified
+blank / `3` ink present but depth ambiguous. Generator, QC gate and samples in
+the repo (`tools/make_pairs.py`, `tools/verify_pairs.py`, `samples/pairs/`).
 
-Three properties aimed at #192's stated concerns:
+Three properties aimed at what the issue actually asks:
 
-**1. "Only the detectable ink patterns" — measured, not assumed.** The
-label floor is set on known-blank papyrus at 0.2% false-positive rate, and
-every scroll's labels ship with a CONDITION CONTROL: the detector's AUC
-separating known ink from blank sheet *inside the text block* — same sheet,
-same preservation, same damage. That is the direct test for "the model
-learned surface, not ink" (it is also how our own earlier false positives
-died: one candidate scored r=+0.44 held-out and 0.21 on blank papyrus —
-it was detecting preservation). Measured: 0.96–0.99 on curated
-segmentations (PHerc0139, Scroll 1), 0.84 on auto-grown ones.
+**1. The depth is recovered, not projected.** Your model is fixed at 62 input
+layers and emits a flat 2D map, so we slide that reading window through the
+stack (offsets 0,14,27,41,54) and give every pixel a response profile — its
+peak is the ink's depth. Then we intersect that with the crop's own intensity
+profile, which locates the *sheet* per pixel (intensity can't see ink —
+density contrast r≈0.002 — but it sees papyrus, and ink lies on papyrus),
+narrowing attribution to ±5 layers. Where a profile is flat we label
+**ambiguous** rather than guess. `verify_pairs.py` then measures that depth
+varies across every shipped crop — mean sd 4 layers over ~9 distinct depth
+centres. A single image projected across layers cannot pass that gate. Our own
+first attempt was exactly that projection and was thrown away.
 
-**2. Depth-true where measured, and honest where not.** Labels are nonzero
-only in the measured ink band (z27..z89 of the 116-layer stacks) — reading
-a blindly-centred band instead scores AUC 0.654 vs 0.944 with the measured
-band, the single largest effect we found (check your pipeline for this
-one). Voxel-level depth attribution is NOT claimed, and the .zattrs say so.
+**2. "Only the detectable ink patterns" is measured.** Positives clear a floor
+calibrated on known-blank papyrus at a **0.2% false-positive rate**, and every
+pair carries a **condition-control AUC**: ink separated from blank sheet
+*inside* the text block — same sheet, same preservation, same damage. That is
+the direct test for the risk you name in the issue, models learning the
+surface instead of the ink. Measured 0.96–0.99 on curated segmentations, 0.84
+on auto-grown ones. It is also how our own earlier false positives died: one
+candidate scored r=+0.44 held-out and 0.21 on blank papyrus — it was reading
+preservation.
 
-**3. Certified negatives.** Training pairs need certified absence:
-label==2 marks blank sheet ≥1.5 mm from any published call (outside
-measured model spillover) and below the floor.
+**3. Empty pairs are removed, not counted.** The QC gate drops any crop
+without real supervision; half the first batch failed it. The manifest carries
+per-pair statistics so the set can be audited rather than trusted.
 
 **The method (issue #193)** is the campaign behind the labels, all in the
 repo: per-scroll depth-band calibration; per-scribe hand measurement

@@ -21,33 +21,63 @@ Two things live here:
 ## The labels (issue #192) — quickstart
 
 ```bash
-# regenerate every label window from the calibrated maps (laptop, no GPU)
-python3 tools/make_labels_3d.py
+# 1. depth-profile a scroll on GPU (slides the model's reading window)
+SCROLL=PHerc0139 OUTDIR=lostbook python3 tools/fleet_lostbook.py profile
+SCROLL=PHerc0139 OUTDIR=lostbook_prof python3 tools/fleet_lostbook.py harvest
 
-# assemble a ready-to-run image/label training pair for one window
-python3 tools/fetch_pair.py out/labels3d/PHercParis4/<window-dir>
+# 2. build ready-to-run image/label pairs (laptop, no GPU)
+SCROLLS=PHerc0139 python3 tools/make_pairs.py
+
+# 3. measure and gate them — empty pairs are removed, not counted
+PRUNE=1 python3 tools/verify_pairs.py
 ```
 
-Sample label windows ship in `samples/labels3d/` — plain **zarr v2, zlib**
-(any zarr client reads them). Per window:
+Sample pairs ship in `samples/pairs/`. Each is a self-contained directory —
+**plain zarr v2, zlib**, readable by any zarr client:
 
-| array | shape | meaning |
-| --- | --- | --- |
-| `label/` | (D, 4096, 4096) uint8 | 0 unlabelled · 1 **ink** at a calibrated floor · 2 **certified blank** |
-| `conf/`  | (4096, 4096) uint8 | model probability × 255 |
+```
+<segment>__ink__y<Y>_x<X>/
+  image/            (D, 512, 512) uint8  the papyrus, unmodified
+  label/            (D, 512, 512) uint8  0 unlabelled · 1 ink · 2 certified
+                                         blank · 3 ink, depth ambiguous
+  LICENCE-DATA.txt  CC BY-NC attribution for the image half
+```
 
-Every `.zattrs` carries the full quality certificate: source volume + window,
-the measured ink depth band (z27..z89 — a blindly-centred band scores AUC
-0.654 vs 0.944), the floor and its measured **0.2% false-positive rate on
-known-blank papyrus**, and the **condition-control AUC** — ink separated from
-blank sheet *inside the text block*, the direct test for "the model learned
-surface, not ink" (#192's stated concern). Negatives (label 2) are certified:
-≥1.5 mm from any published call, outside measured model spillover. The scroll
-data itself is never redistributed; `fetch_pair.py` pulls the image half from
-the public bucket on your machine.
+Open the two arrays and train. No cropping, no preprocessing, no fetch step.
 
-Which windows would be most useful next? Open an issue — generation costs
-about one GPU-minute per 4096² window.
+### How the depth is real
+
+The ink model is fixed at 62 input layers and emits one flat 2D map, so depth
+has to be *recovered*. Two independent signals, intersected:
+
+- **Model** — slide the 62-layer reading window to offsets `0,14,27,41,54`.
+  Each pixel gets a response profile; its **peak** is where the ink is. That
+  alone localises depth only to the window width.
+- **Sheet** — inside that window, the crop's own intensity profile gives the
+  papyrus surface per pixel. Intensity cannot see ink (density contrast
+  r≈0.002 — the project's first dead mechanism), but it sees the sheet
+  plainly, and ink can only lie on the sheet. This narrows the label to ±5
+  layers.
+
+Where a pixel's profile is flat, the label says **ambiguous** rather than
+inventing a depth. `tools/verify_pairs.py` then *measures* that depth varies
+across every shipped crop (mean sd 4 layers over ~9 distinct depth centres) —
+a projected label cannot pass that gate, and v1 of this deliverable did not.
+
+### The quality certificate
+
+Every `label/.zattrs` carries, per pair: the ink floor and its **measured
+0.2% false-positive rate on known-blank papyrus**; the **condition-control
+AUC** — ink separated from blank sheet *inside* the text block, same
+preservation, which is the direct test for #192's stated worry that labels
+teach a model the surface rather than the ink; the measured ink depth band;
+the model and full recipe; and provenance back to the source volume.
+
+Pairs come in two kinds: **ink-rich** (positives) and **negative-rich**
+(certified absence, ~26% of volume). Both are needed to train.
+
+Which segments would be most useful labelled next? Open an issue — profiling
+costs roughly one GPU-minute per window.
 
 ---
 
