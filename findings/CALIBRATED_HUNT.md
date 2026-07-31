@@ -116,3 +116,45 @@ python3 tools/hunt_0139.py                 # the search + mandatory spatial null
 python3 tools/evidence_hunt.py             # the render for human eyes
 python3 tools/test_differential.py         # gate calibration harness
 ```
+
+
+## THE NIGHT OF FOUR SCROLLS — appended 2026-07-30 late
+
+"Adapt and find ink" — the directive. Four scrolls searched with the
+calibrated instrument in one night. No new ink. Every silence has a number.
+
+| scroll | segs/windows | AUC vs pub | per-letter | control | hunt |
+| --- | --- | --- | --- | --- | --- |
+| PHerc0139 (tuned) | 38 / 78 | 0.92 | 78% | 0.96 | quiet |
+| Scroll 1 | 50 / 37 | 0.80 | **98%** | **0.99** | quiet (5 cand., all null-dead) |
+| PHerc0500P2 | 38 / 54 | 0.83 | 26–37% | 0.84 | quiet (5 cand., all null-dead) |
+| PHerc0343P | 8 / 13 | 0.77 | 28% | 0.84 | quiet (1 cand., p=1.0) |
+
+**The adaptation finding (new, publishable): fine-tune gains are
+SEGMENTATION-BOUND.** Same recipe, same steps, same scribe-specific text:
++0.094 AUC on 0139's curated segments; **+0.011** on 0500P2's auto-debug
+segments (`out/p0500p2_tuned/ab.json`). Training cannot rescue rough
+flattening — the wall on auto-segmented scrolls is upstream geometry, not
+model knowledge. Corollary: PHerc0814 (18/19 auto-grown) shares the wall.
+0343P is curated but its text is too sparse to train on (max window cov 14%).
+
+**The ruler correction:** letter heights from connected components of
+binarized maps are 3–5× low (fragments, not letters). `tools/measure_hand.py`
+(band FWHM) validates at 2.94 vs Scroll 1's known 3.00 mm. Validated hands:
+Scroll 1 3.00 / 0500P2 1.92 / 0343P 1.67 / 1667 1.63 / **0139 1.61 (not
+1.09)** / 0814 1.28. The library writes small; Scroll 1 is the outlier; and
+everything but Scroll 1 sits between the model's 0.29 mm output grid and the
+~2 mm shape-resolution line. That band is the game.
+
+**Ops lessons banked:** zombie pods (check `runtime`, not status); PIL bomb
+guard vs 200+ MP published maps; low aims land off-sheet; keep-out is a fixed
+physical distance; DONE pods bill while sleeping — kill workers at harvest;
+harvest must never refetch held files (a dead pod's failed fetch deleted 42
+metas — reconstructed deterministically, 12/12 survivor-verified).
+
+**Where new ink still lives, ranked:** (1) segmentation quality itself — the
+auto-grown scrolls become searchable exactly when their flattening improves,
+which is the field's bottleneck, not ours; (2) Scroll 1's 30 uncovered
+segments + the 0139 title segment at native res; (3) 1667 margins (curated,
+1.63 mm, field-read but never differential-searched); (4) bootstrap round 2
+on 0139 with the honest recipe. All pods terminated; ~$20 total for the night.

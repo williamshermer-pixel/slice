@@ -1,6 +1,8 @@
 # HANDOFF — read this first
 
-## ⚡⚡⚡ LIVE STATE (2026-07-30 late) — PODS MAY BE RUNNING. ACT ON THIS FIRST.
+## ⚡⚡⚡ LIVE STATE (2026-07-30, night closed) — NO PODS RUNNING. All terminated, verified zero billing. Four scrolls searched, all quiet at measured sensitivity — see "THE NIGHT OF FOUR SCROLLS" in `findings/CALIBRATED_HUNT.md` (adaptation is segmentation-bound: +0.094 curated vs +0.011 auto-segs; validated hands table; ranked remaining lanes). The block below is the operating manual for re-flying any scroll.
+
+## (earlier tonight — fleet runbook, still current)
 
 **A PHerc0500P2 fleet was IN FLIGHT when this was written** — 5 pods, $0.69/hr
 each: hub `novnv95wlh054y`, workers `k8u6o3eowqaxgf` `s5rahah374ryrv`
