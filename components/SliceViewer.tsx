@@ -28,6 +28,8 @@ import {
   linePitchCheck,
   resolvability,
   HAND,
+  handFor,
+  INK_BAND,
   type ColormapId,
 } from "@/lib/colormaps";
 import { exportPng } from "@/lib/export";
@@ -49,6 +51,8 @@ type Specimen = {
   voxelUm: number;
   shape: [number, number, number];
   note: string;
+  /** Which scroll (scribe) this belongs to — hands are NOT shared. */
+  scroll?: string;
 };
 
 function specimensFor(source: Source): Specimen[] {
@@ -60,6 +64,7 @@ function specimensFor(source: Source): Specimen[] {
         voxelUm: v.voxelUm,
         shape: v.shape,
         note: v.unread ? "Unread. No text has ever been recovered." : "Text recovered 2023.",
+        scroll: v.id,
       }))
     : SURFACES.map((s) => ({
         id: s.id,
@@ -68,6 +73,7 @@ function specimensFor(source: Source): Specimen[] {
         voxelUm: s.voxelUm,
         shape: s.shape,
         note: s.note,
+        scroll: s.scroll,
       }));
 }
 
@@ -295,13 +301,14 @@ export default function SliceViewer() {
   );
 
   /** How big a letter is, in canvas fractions, for the on-screen reference. */
+  const hand = useMemo(() => handFor(specimen.scroll), [specimen.scroll]);
   const letterScale = useMemo(() => {
     if (!box || box.width <= 0) return null;
     const viewUm = box.width * specimen.voxelUm;
     return {
-      w: HAND.letterAdvanceUm / viewUm,
-      h: HAND.letterHeightUm / (box.height * specimen.voxelUm),
-      tooSmallToSee: HAND.letterAdvanceUm / viewUm < 0.004,
+      w: hand.letterAdvanceUm / viewUm,
+      h: hand.letterHeightUm / (box.height * specimen.voxelUm),
+      tooSmallToSee: hand.letterAdvanceUm / viewUm < 0.004,
     };
   }, [box, specimen.voxelUm]);
 
@@ -311,8 +318,8 @@ export default function SliceViewer() {
     const umPerPixel = specimen.voxelUm * level.factor;
     const spanUm = region.height * umPerPixel;
     // Needs at least a couple of line pitches in frame or the answer is noise.
-    if (spanUm < HAND.linePitchUm * 2.5) {
-      return { tooShort: true, needMm: (HAND.linePitchUm * 2.5) / 1000 } as const;
+    if (spanUm < hand.linePitchUm * 2.5) {
+      return { tooShort: true, needMm: (hand.linePitchUm * 2.5) / 1000 } as const;
     }
     const r = linePitchCheck(region.data, region.width, region.height, umPerPixel);
     return r ? ({ tooShort: false, ...r } as const) : null;
@@ -880,14 +887,44 @@ export default function SliceViewer() {
               </Field>
 
               <Field label={`${depthLabel} ${z} · index ${zIndex} of ${level.shape[0]}`}>
-                <input
-                  type="range"
-                  min={0}
-                  max={base.shape[0] - 1}
-                  value={z}
-                  onChange={(e) => setZ(Number(e.target.value))}
-                />
-                <p className="mt-1 text-[10px] text-ash">↑ ↓ to step · shift for ten</p>
+                {/* The measured ink band, drawn on the rail itself. Reading a
+                    blindly-centred band scores AUC 0.654; this band scores
+                    0.944. The single most expensive lesson of the campaign,
+                    made unmissable where the mistake happens. */}
+                <div className="relative">
+                  {source === "sheet" && base.shape[0] > INK_BAND.hi ? (
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute top-1/2 h-[5px] -translate-y-1/2 bg-ochre/35"
+                      style={{
+                        left: `${(100 * INK_BAND.lo) / (base.shape[0] - 1)}%`,
+                        width: `${(100 * (INK_BAND.hi - INK_BAND.lo)) / (base.shape[0] - 1)}%`,
+                      }}
+                    />
+                  ) : null}
+                  <input
+                    type="range"
+                    className="relative"
+                    min={0}
+                    max={base.shape[0] - 1}
+                    value={z}
+                    onChange={(e) => setZ(Number(e.target.value))}
+                  />
+                </div>
+                {source === "sheet" && base.shape[0] > INK_BAND.hi ? (
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <p className="text-[10px] text-ash">↑ ↓ to step · shift for ten</p>
+                    <button
+                      className="btn px-2 py-0.5 text-[10px]"
+                      onClick={() => setZ(Math.round((INK_BAND.lo + INK_BAND.hi) / 2))}
+                      title="Layers 27–89, measured: AUC 0.654 blind-centred vs 0.944 in-band"
+                    >
+                      Ink band {INK_BAND.lo}–{INK_BAND.hi}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-[10px] text-ash">↑ ↓ to step · shift for ten</p>
+                )}
               </Field>
 
               <Field label="View">

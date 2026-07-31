@@ -132,6 +132,45 @@ export const HAND = {
   inkLayerUm: 15,
 };
 
+/**
+ * Per-scribe hands, measured 2026-07-30 by band-FWHM on the published ink
+ * maps (tools/measure_hand.py; validated 2.94 mm against Scroll 1's
+ * independently known 3.00 mm). The library did not share a ruler: applying
+ * Scroll 1's 3 mm hand to PHerc0139 manufactured candidates that had to be
+ * retracted. Advance/stroke scale from the Scroll 1 ratios where unmeasured.
+ */
+const SCRIBES: Record<string, { letterHeightUm: number; linePitchUm: number }> = {
+  PHercParis4: { letterHeightUm: 3000, linePitchUm: 6180 },
+  PHerc0139: { letterHeightUm: 1610, linePitchUm: 4320 },
+  PHerc0500P2: { letterHeightUm: 1920, linePitchUm: 2820 },
+  PHerc0343P: { letterHeightUm: 1670, linePitchUm: 3460 },
+  PHerc1667: { letterHeightUm: 1630, linePitchUm: 3260 },
+  PHerc0814: { letterHeightUm: 1280, linePitchUm: 3300 },
+};
+
+/** The measured hand for a scroll, Scroll 1 ratios for derived quantities. */
+export function handFor(scroll?: string): typeof HAND & { measured: boolean } {
+  const s = scroll ? SCRIBES[scroll] : undefined;
+  if (!s) return { ...HAND, measured: false };
+  const k = s.letterHeightUm / HAND.letterHeightUm;
+  return {
+    linePitchUm: s.linePitchUm,
+    letterHeightUm: s.letterHeightUm,
+    letterAdvanceUm: Math.round(HAND.letterAdvanceUm * k),
+    strokeWidthUm: Math.round(HAND.strokeWidthUm * k),
+    inkLayerUm: HAND.inkLayerUm,
+    measured: true,
+  };
+}
+
+/**
+ * The measured ink depth band, in surface-volume layer indices. Reading a
+ * blindly-centred band instead scores AUC 0.654 vs 0.944 — the single
+ * largest effect found in this project. Verified on PHercParis4 and
+ * PHerc0139 (0.827 on its called text); transfer confirmed on PHerc0500P2.
+ */
+export const INK_BAND = { lo: 27, hi: 89 } as const;
+
 export type Resolvability = {
   inkVoxels: number;
   strokeVoxels: number;

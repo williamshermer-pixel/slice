@@ -33,9 +33,18 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import differential_0139 as D
 from letterscale_0139 import boxmean, BOX
 
-CLEAR = 2 * BOX            # spillover keep-out from any called pixel
+# Spillover keep-out. NOT proportional to letter size: the model's response
+# smears by its own blend kernel (gaussian sigma 18 pred-px) plus tile
+# context, which is a FIXED physical distance -- about 0.5 mm. 1.5 mm clears
+# it with margin. Scaling this with the hand (2*BOX) made the keep-out 6 mm on
+# Scroll 1's 3 mm hand, which leaves no legal null on dense text at all.
+CLEAR = int(float(os.environ.get("CLEAR_MM", "1.5")) * D.MM)
 N_ROLL = 24
 RNG = np.random.default_rng(23)
+# Minimum clusters to call a candidate. 2 looks for a LINE of letters; drop to
+# 1 to interrogate single letter-scale marks (the spatial null then has to
+# carry the whole burden of proof, and it is much harder to clear at n=1).
+MIN_CLUSTERS = int(os.environ.get("MIN_CLUSTERS", "2"))
 
 
 def masks_for(ours, pub):
@@ -70,7 +79,7 @@ def find(bm, legal, thr):
 
 def main():
     ls = json.load(open(os.path.join(D.LB, "letterscale.json")))
-    print(f"box {BOX}px ({BOX/D.MM:.2f} mm) | keep-out {CLEAR}px from called ink")
+    print(f"box {BOX}px ({BOX/D.MM:.2f} mm) | keep-out {CLEAR}px ({CLEAR/D.MM:.2f} mm) from called ink")
 
     # ---- calibrate the geometry-matched null on TEXT windows -------------
     nullvals = []
@@ -91,7 +100,8 @@ def main():
         if len(nullvals) >= 14:
             break
     if not nullvals:
-        sys.exit("no legal null area found")
+        sys.exit(f"no legal null area found (box {BOX}px, keep-out {CLEAR}px) — "
+                 f"the windows may be too densely called at this hand")
     nv = np.concatenate(nullvals)
     thr = float(np.percentile(nv, 99.9))
     print(f"null: {nv.size} spillover-safe blank boxes | median {np.median(nv):.4f}"
@@ -115,7 +125,7 @@ def main():
             continue
         comps, r, hot = find(bm, legal, thr)
         flag = ""
-        if len(comps) >= 2:
+        if len(comps) >= MIN_CLUSTERS:
             flag = "  <-- CANDIDATE"
             hits.append(dict(tag=tag, seg=meta["seg"], aim=meta["aim"],
                              window=meta["window"], n=len(comps),
@@ -125,10 +135,10 @@ def main():
             print(f"{meta['seg'].split('/')[-2][:28]:28} {meta['aim']:5.2f} "
                   f"{100*legal.mean():6.1f}% {len(comps):9d} {r:7.3f}{flag}")
 
-    print(f"\n{len(hits)} windows with >=2 clusters")
+    print(f"\n{len(hits)} windows with >={MIN_CLUSTERS} clusters")
     if not hits:
         print("\nNo ink outside the published calls at this detector's\n"
-              "sensitivity, across every window mapped. With ~77% per-letter\n"
+              f"sensitivity, across every window mapped. With ~{100*ls['detection_rate']:.0f}% per-letter\n"
               "detection against a distant null and a spillover-safe null used\n"
               "here, this is a CALIBRATED negative, not a blind one.")
         json.dump(dict(threshold=thr, candidates=[], n_null=int(nv.size)),

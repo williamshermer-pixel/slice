@@ -1,5 +1,4 @@
 import DepthSheet from "@/components/DepthSheet";
-import SignOut from "@/components/SignOut";
 
 export const metadata = { title: "The Lab — Slice" };
 
@@ -8,7 +7,7 @@ export default function LabPage() {
     <main className="mx-auto max-w-[1240px] px-6 py-7">
       <header className="mb-6 flex items-end justify-between gap-6 border-b border-rule pb-4">
         <div>
-          <p className="eyebrow mb-1">Restricted</p>
+          <p className="eyebrow mb-1">Depth</p>
           <h1 className="font-display text-[2.6rem] leading-none tracking-tight text-papyrus">
             The Lab
           </h1>
@@ -21,7 +20,9 @@ export default function LabPage() {
           <a href="/" className="btn">
             Viewer
           </a>
-          <SignOut />
+          <a href="/record" className="btn">
+            The Record
+          </a>
         </nav>
       </header>
 
