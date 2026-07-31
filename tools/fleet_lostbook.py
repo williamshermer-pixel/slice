@@ -30,7 +30,9 @@ AIMS = os.environ.get("AIMS", "0.30,0.12,0.04")
 WPT = os.path.join(ROOT, "out", "bootstrap", "tuned_0139_honest.pt")
 PART = 8 * 1024 * 1024   # proxy kills PUT bodies much larger than this
 API = "https://rest.runpod.io/v1"
-GPUS = ["NVIDIA GeForce RTX 4090", "NVIDIA RTX A5000"]
+GPUS = ["NVIDIA GeForce RTX 4090", "NVIDIA RTX A5000",
+        "NVIDIA GeForce RTX 3090", "NVIDIA RTX A4500",
+        "NVIDIA RTX A4000", "NVIDIA L4"]   # 83M-param Conv3d fits 16GB
 IMAGE = "runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404"
 
 
@@ -200,12 +202,13 @@ def harvest():
             for nm in names:
                 perpod = nm in ("progress.txt", "done.json", "error.txt")
                 dst = os.path.join(OUT, f"{p['tag']}_{nm}" if perpod else nm)
-                if os.path.exists(dst) and nm.endswith(".npy"):
-                    continue                      # already harvested
+                if os.path.exists(dst) and os.path.getsize(dst) > 0:
+                    continue    # NEVER refetch what we hold — a dead pod's
+                                # failed fetch must not delete harvested files
                 if cget(f"{base}/out/{nm}", dst)[0]:
                     got += 1
                 elif os.path.exists(dst):
-                    os.remove(dst)                # curl -f leaves empties
+                    os.remove(dst)                # only empties we just made
         except Exception as e:
             print(f"{p['name']}: {e}")
     print(f"harvested {got} files -> {OUT}")
