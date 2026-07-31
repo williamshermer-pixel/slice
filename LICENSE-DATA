@@ -1,0 +1,17 @@
+SCROLL DATA LICENCE
+===================
+
+This repository's CODE is MIT (see LICENSE).
+
+Directories named `image/` under `samples/pairs/` contain crops of micro-CT
+surface volumes published by the Vesuvius Challenge. That data is:
+
+    (c) Vesuvius Challenge, licensed CC BY-NC 4.0
+    https://creativecommons.org/licenses/by-nc/4.0/
+    Source: vesuvius-challenge-open-data (public S3 bucket)
+
+It is redistributed here, unaltered in value, solely so that the image/label
+pairs requested in ScrollPrize/villa#192 are usable without a separate fetch
+step. It is NOT relicensed under MIT, and non-commercial terms continue to
+apply to it. Remove those directories if you need an MIT-only tree; the
+labels and the generator do not depend on them.

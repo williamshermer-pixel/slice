@@ -81,6 +81,17 @@ costs roughly one GPU-minute per window.
 
 ---
 
+## Data licence — what this repo contains
+
+The **viewer** redistributes nothing: it streams from the public bucket in
+your browser. The **label pairs** are different and the distinction matters.
+`samples/pairs/*/image/` contains 512³ crops of Vesuvius Challenge surface
+volumes, redistributed under **CC BY-NC 4.0** with attribution
+(`LICENCE-DATA.txt` in each pair, and `LICENSE-DATA` at the root). #192 asks
+for ready-to-run image/label PAIRS, which cannot be delivered without the
+image half. The MIT licence covers this repository's **code only**; the scan
+data keeps its own CC BY-NC terms and is not relicensed.
+
 ## The viewer
 
 Browser-native viewer for Herculaneum scroll micro-CT volumes. Streams OME-Zarr
@@ -277,11 +288,10 @@ breakage.
 
 ## The lab
 
-`/lab` is password-gated and holds the depth contact sheet: every layer of a
+`/lab` is open (previously password-gated; opened for the submission) and holds the depth contact sheet: every layer of a
 tile at once, for finding the depth the ink sits at. The public viewer is
 deliberately not gated.
 
-The gate is server-enforced in `middleware.ts` — the passphrase never reaches
 the client bundle, and the cookie holds a SHA-256 of it rather than the value,
 httpOnly. It **fails closed**: with no `LAB_PASSWORD` set, the lab is
 unreachable rather than open, so a deploy that forgets the variable locks

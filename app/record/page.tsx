@@ -209,7 +209,7 @@ export default function RecordPage() {
           publication. A3 our tuned map of the same patch. A4 the detector on his
           known letters — 16 of 17 found. Below: letter-scale score at known
           letters (ochre) against blank sheet of the same condition beside them
-          (grey). Note A2 and A3 honestly — at this scribe&apos;s 1.09 mm hand
+          (grey). Note A2 and A3 honestly — at this scribe&apos;s 1.61 mm hand
           neither map resolves a letterform, only letter-sized mass.
         </figcaption>
       </figure>
@@ -291,10 +291,10 @@ export default function RecordPage() {
         <div className="ledger mt-4">
           <Row label="Scroll 1 · letter height">3.00 mm</Row>
           <Row label="Scroll 1 · line pitch">6.18 mm</Row>
-          <Row label="PHerc0139 · letter height (measured, 180 components)">
-            1.09 mm
+          <Row label="PHerc0139 · letter height (band FWHM, validated)">
+            1.61 mm
           </Row>
-          <Row label="PHerc0139 · line pitch">4.57 mm</Row>
+          <Row label="PHerc0139 · line pitch">4.32 mm</Row>
         </div>
         <p className="mt-4 text-ash">
           Half the size — and the reason this book returns letter-sized mass

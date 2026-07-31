@@ -40,6 +40,7 @@ OUTROOT = os.path.join(ROOT, "out", "pairs")
 B = "https://vesuvius-challenge-open-data.s3.us-east-1.amazonaws.com"
 CH = 128
 CROP = int(os.environ.get("CROP", "512"))          # canvas px, ready-to-run
+MM_PX = 1000.0 / 9.032                             # pred px per mm
 MAXPAIRS = int(os.environ.get("N", "24"))
 PROF_DIRS = {"PHerc0139": "lostbook_prof"}
 CAL_DIRS = {"PHerc0139": "lostbook", "PHercParis4": "scroll1",
@@ -52,6 +53,18 @@ ATTRIB = ("Scroll data © Vesuvius Challenge, CC BY-NC 4.0. Redistributed "
 def get(u, t=180):
     r = urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"})
     return urllib.request.urlopen(r, timeout=t).read()
+
+
+_PUB = {}
+
+
+def pub_for(scroll, meta):
+    """Published calls over this window, for the blank keep-out."""
+    key = (scroll, meta["seg"], tuple(meta["window"]))
+    if key not in _PUB:
+        import differential_0139 as _D
+        _PUB[key] = _D.pub_crop(meta)
+    return _PUB[key]
 
 
 def depth_label(prof, offsets, dlay, floor, shape_hw):
@@ -121,7 +134,22 @@ def build(scroll, calib, profdir):
         # supervision.
         q = CROP // 4                                        # in pred px
         peakmap = prof.max(0)
-        blankmap = peakmap < (floor["floor"] * 0.35)
+        # Certified blank = the model is quiet at EVERY depth AND the published
+        # detector called nothing within 1.5 mm. The probability cut alone is
+        # not certification: our floor only recovers ~14% of known ink, so a
+        # low response is weak evidence of absence. The keep-out (which v1 had
+        # and v2 dropped) is what makes the negative trustworthy.
+        try:
+            pubmap = pub_for(scroll, meta)
+            called = (pubmap > 128).astype(np.float32)
+            kk = min(int(1.5 * MM_PX), called.shape[0] - 1)
+            cc = np.pad(called, ((1, 0), (1, 0))).cumsum(0).cumsum(1)
+            near = cc[kk:, kk:] - cc[:-kk, kk:] - cc[kk:, :-kk] + cc[:-kk, :-kk]
+            far = np.zeros(peakmap.shape, bool)
+            far[:near.shape[0], :near.shape[1]] = near <= 0
+        except Exception:
+            far = np.zeros(peakmap.shape, bool)
+        blankmap = (peakmap < (floor["floor"] * 0.35)) & far
 
         def densest(field):
             cs = np.pad(field.astype(np.float32),
@@ -137,8 +165,18 @@ def build(scroll, calib, profdir):
         for kind, (iy, ix) in picks:
             if made >= MAXPAIRS:
                 break
-            y0, x0 = meta["window"][0] + iy * 4, meta["window"][1] + ix * 4
-            y0, x0 = (y0 // CH) * CH, (x0 // CH) * CH         # chunk-aligned
+            # Snap the PICK ITSELF to a chunk boundary, then derive the origin
+            # from it. Snapping the origin instead (and leaving iy/ix at their
+            # pre-snap values) cuts the label from different rows than the
+            # image is fetched from — a silent offset of up to 124 px, which
+            # is ~17% of a letter at this scribe's hand. The window origin is
+            # already a multiple of CH, so pred px 4*iy must snap to CH too:
+            # iy therefore snaps to a multiple of CH//4 = 32.
+            iy = (iy // (CH // 4)) * (CH // 4)
+            ix = (ix // (CH // 4)) * (CH // 4)
+            y0 = meta["window"][0] + iy * 4
+            x0 = meta["window"][1] + ix * 4
+            assert y0 % CH == 0 and x0 % CH == 0, "origin must be chunk-aligned"
 
             # ---- image half: fetch exactly this crop, full depth
             nt = CROP // CH
@@ -190,7 +228,7 @@ def build(scroll, calib, profdir):
                         lo, hi = max(0, zc - tight), min(D, zc + tight)
                     lab[lo:hi, yy*4:(yy+1)*4, xx*4:(xx+1)*4] = code
             # certified blank: never ink at any depth, comfortably below floor
-            blank2d = prof.max(0)[iy:iy+q, ix:ix+q] < (floor["floor"] * 0.35)
+            blank2d = blankmap[iy:iy+q, ix:ix+q]
             for yy, xx in zip(*np.nonzero(blank2d)):
                 lab[:, yy*4:(yy+1)*4, xx*4:(xx+1)*4] = 2
 

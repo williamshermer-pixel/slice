@@ -33,9 +33,27 @@ MIN_DEPTH_LEVELS = 3
 
 
 def read_chunk(d, arr):
-    za = json.loads(open(os.path.join(d, arr, ".zarray")).read())
-    raw = zlib.decompress(open(os.path.join(d, arr, "0.0.0"), "rb").read())
-    return np.frombuffer(raw, np.uint8).reshape(za["chunks"]), za
+    """Read the FULL array by assembling every chunk.
+
+    Reading only chunk 0.0.0 measured the top-left QUARTER of each crop while
+    reporting the numbers as whole-crop statistics — the gate that exists to
+    make the deliverable measurable was itself measuring 25% of it.
+    """
+    base = os.path.join(d, arr)
+    za = json.loads(open(os.path.join(base, ".zarray")).read())
+    shape, chunks = za["shape"], za["chunks"]
+    out = np.zeros(shape, np.uint8)
+    grid = [int(np.ceil(s / c)) for s, c in zip(shape, chunks)]
+    for idx in np.ndindex(*grid):
+        f = os.path.join(base, ".".join(map(str, idx)))
+        if not os.path.exists(f):
+            continue
+        blk = np.frombuffer(zlib.decompress(open(f, "rb").read()),
+                            np.uint8).reshape(chunks)
+        sl = tuple(slice(i * c, min((i + 1) * c, s))
+                   for i, c, s in zip(idx, chunks, shape))
+        out[sl] = blk[tuple(slice(0, x.stop - x.start) for x in sl)]
+    return out, za
 
 
 def check(d):
@@ -45,6 +63,22 @@ def check(d):
         img, zi = read_chunk(d, "image")
     except Exception as e:
         return None, [f"unreadable: {e}"]
+    # REGISTRATION: label and image must describe the same papyrus. A silent
+    # offset here is the worst failure this deliverable can have, so it is
+    # checked rather than assumed — ink should sit where the sheet is, not in
+    # the volume's empty margin.
+    ink_reg = lab == 1
+    if ink_reg.any():
+        occupied = img[ink_reg].mean()
+        elsewhere = img[(lab == 0)].mean() if (lab == 0).any() else 0.0
+        if occupied < 0.55 * elsewhere:
+            fail_reg = (f"labels sit on near-empty volume "
+                        f"(mean {occupied:.0f} vs {elsewhere:.0f}) — "
+                        f"possible image/label misregistration")
+        else:
+            fail_reg = None
+    else:
+        fail_reg = None
     at = json.loads(open(os.path.join(d, "label", ".zattrs")).read())
     if zl["shape"] != zi["shape"]:
         fail.append("image/label shape mismatch")
@@ -56,6 +90,8 @@ def check(d):
     if img.std() < 3:
         fail.append("image is flat — not real papyrus")
 
+    if fail_reg:
+        fail.append(fail_reg)
     ink = lab == 1
     has = ink.any(0)
     ncol = int(has.sum())

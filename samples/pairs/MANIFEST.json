@@ -1,13 +1,13 @@
 {
- "note": "Two representative pairs from out/pairs (full set regenerates via tools/make_pairs.py). Verified by tools/verify_pairs.py.",
+ "note": "Two representative pairs. Full set: tools/make_pairs.py + tools/verify_pairs.py.",
  "pairs": [
   {
-   "pair": "20250831000000-w040_2025083102__ink__y7808_x7168",
+   "pair": "20250108000000-w025_2025010863__ink__y16768_x22016",
    "kind": "ink",
-   "ink_columns": 8352,
-   "depth_sd_layers": 5.09,
-   "depth_levels": 12,
-   "ambiguous_columns": 3856,
+   "ink_columns": 30736,
+   "depth_sd_layers": 13.54,
+   "depth_levels": 23,
+   "ambiguous_columns": 108624,
    "certified_blank_frac": 0.0,
    "shape": [
     116,
@@ -19,13 +19,13 @@
    "scroll": "PHerc0139"
   },
   {
-   "pair": "20250108000003-w028_2025010836__blank__y11392_x17664",
+   "pair": "20250108000000-w025_2025010863__blank__y12928_x23552",
    "kind": "blank",
    "ink_columns": 0,
    "depth_sd_layers": 0.0,
    "depth_levels": 0,
    "ambiguous_columns": 0,
-   "certified_blank_frac": 0.645,
+   "certified_blank_frac": 0.3336,
    "shape": [
     116,
     512,

@@ -36,7 +36,7 @@ profile, which locates the *sheet* per pixel (intensity can't see ink —
 density contrast r≈0.002 — but it sees papyrus, and ink lies on papyrus),
 narrowing attribution to ±5 layers. Where a profile is flat we label
 **ambiguous** rather than guess. `verify_pairs.py` then measures that depth
-varies across every shipped crop — mean sd 4 layers over ~9 distinct depth
+varies across every shipped crop — mean sd 7.3 layers over ~13 distinct depth
 centres. A single image projected across layers cannot pass that gate. Our own
 first attempt was exactly that projection and was thrown away.
 
@@ -50,9 +50,22 @@ on auto-grown ones. It is also how our own earlier false positives died: one
 candidate scored r=+0.44 held-out and 0.21 on blank papyrus — it was reading
 preservation.
 
-**3. Empty pairs are removed, not counted.** The QC gate drops any crop
-without real supervision; half the first batch failed it. The manifest carries
-per-pair statistics so the set can be audited rather than trusted.
+**3. Empty pairs are removed, not counted.** The QC gate
+(`tools/verify_pairs.py`) drops any crop without real supervision and checks
+registration — that labels sit on sheet, not on empty volume. 28 pairs
+pass (22 ink-rich, 528–30736 resolved ink
+columns; 6 negative-rich, 12% certified-blank
+volume). The manifest carries per-pair statistics so the set can be audited
+rather than trusted.
+
+**Known limits, stated plainly.** Each crop is 512³ voxels = **1.16 mm**
+square, smaller than one letter of this scribe's 1.61 mm hand — these are
+training tiles, not readable views. All pairs are from **one scroll**
+(PHerc0139). Most labelled ink volume is code 3 (depth ambiguous) rather than
+code 1; we would rather withhold a depth than invent one. And the method
+**requires an existing segmentation** — it reads surface volumes, so it does
+not yet address #193's hardest case, labels for regions no segmentation
+covers. That case is open and we would like to talk about it.
 
 **The method (issue #193)** is the campaign behind the labels, all in the
 repo: per-scroll depth-band calibration; per-scribe hand measurement
