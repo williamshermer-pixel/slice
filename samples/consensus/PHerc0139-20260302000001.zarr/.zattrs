@@ -1,0 +1,51 @@
+{
+ "title": "cross-energy consensus ink labels",
+ "scroll": "PHerc0139",
+ "segment": "20260302000001",
+ "codes": {
+  "0": "unlabelled - not covered by both scans, or within the edge keep-out where a letter-box average is not trustworthy",
+  "1": "consensus ink - both independent scans call it",
+  "2": "consensus blank - neither scan calls it, and it clears both the spillover keep-out from any call and the sheet-edge keep-out",
+  "3": "disputed - exactly one scan calls it"
+ },
+ "counts_px": {
+  "unlabelled": 4881565,
+  "ink": 96279,
+  "blank": 248964,
+  "disputed": 288632
+ },
+ "counts_pct_of_canvas": {
+  "unlabelled": 88.507,
+  "ink": 1.746,
+  "blank": 4.514,
+  "disputed": 5.233
+ },
+ "resolution_um_per_px": 18.064,
+ "grid": "published ink-map canvas, downsampled 8x (ds8)",
+ "letter_height_mm": 1.61,
+ "letter_height_px": 89.1,
+ "sources": {
+  "59keV": "PHerc0139-20260302000001-1.129um-0.22m-59keV-volume-20260413113053-L1-20260709123958-mrg20736-1um-s1z2-tile256-stride128.tif",
+  "78keV": "PHerc0139-20260302000001-2.399um-0.22m-78keV-volume-20260102150214-20260417190342-new_canon_autoresearch_recipe-tile256-stride128.tif"
+ },
+ "source_bucket_prefix": "https://vesuvius-challenge-open-data.s3.us-east-1.amazonaws.com/PHerc0139/segments/",
+ "independence": "59 keV (1.129um-...-L1 flattening, 2.258 um/voxel) and 78 keV (2.399um, 2.399 um/voxel): different photon energy, reconstruction, flattening run and model recipe, published months apart. Shared input: the papyrus only.",
+ "registration": "78 keV map resized onto the 59 keV canvas by the voxel ratio; measured best global fit sx=1.000 sy=1.000 dy=0 dx=0 (the flattenings share a UV layout), then a block phase-correlation field for residual warp, median 0 px, IQR ~45 px (0.8 mm). Registering on the sheet MASK is wrong -- 78 keV recovers ~1.8x more sheet and drags the fit to a false sy=0.87.",
+ "agreement": {
+  "shared_sheet_pct": 43.6,
+  "letterscale_spearman_r": 0.263,
+  "jaccard": 0.2501,
+  "jaccard_spatial_null": 0.0239,
+  "enrichment_over_null": 10.47,
+  "p_vs_rolled_null": 0.04,
+  "call_threshold": "each scan's own top decile, letter-box integrated (per-pixel thresholding recovers only 10-12% of known letters)"
+ },
+ "keepouts": {
+  "spillover_mm": 1.5,
+  "sheet_edge_letters": 1.5,
+  "why": "spillover is the model blend kernel and is a fixed physical distance, not a multiple of the hand; the edge keep-out exists because 60.6% of an unrestricted search area lies within two letters of a sheet boundary, where a letter-box average runs off the sheet and manufactured this project's first cross-energy candidate"
+ },
+ "LIMITATION": "Two energies share the papyrus, so agreement does NOT separate ink from sheet CONDITION -- text sits on well-preserved sheet and both scans respond to preservation. These labels are cross-scan certified, not condition-controlled.",
+ "license": "CC BY-NC 4.0, (c) Vesuvius Challenge. Derived from published ink detections. Labels only -- no scroll image data is redistributed here.",
+ "generator": "tools/make_consensus_labels.py"
+}

@@ -1,0 +1,227 @@
+{
+ "codes": {
+  "0": "unlabelled - not covered by both scans, or within the edge keep-out where a letter-box average is not trustworthy",
+  "1": "consensus ink - both independent scans call it",
+  "2": "consensus blank - neither scan calls it, and it clears both the spillover keep-out from any call and the sheet-edge keep-out",
+  "3": "disputed - exactly one scan calls it"
+ },
+ "um_per_px": 18.064,
+ "segments": [
+  {
+   "scroll": "PHerc0814",
+   "segment": "20250925161630",
+   "shape": [
+    2669,
+    9828
+   ],
+   "unlabelled": 24706347,
+   "ink": 440411,
+   "blank": 133405,
+   "disputed": 950769
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20250925182632",
+   "shape": [
+    2473,
+    11214
+   ],
+   "unlabelled": 26299265,
+   "ink": 425074,
+   "blank": 159908,
+   "disputed": 847975
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20250925204843",
+   "shape": [
+    2400,
+    16478
+   ],
+   "unlabelled": 38956187,
+   "ink": 169179,
+   "blank": 38766,
+   "disputed": 383068
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20250925212701",
+   "shape": [
+    2110,
+    3569
+   ],
+   "unlabelled": 6923907,
+   "ink": 184820,
+   "blank": 48202,
+   "disputed": 373661
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20250925222237",
+   "shape": [
+    2028,
+    6155
+   ],
+   "unlabelled": 11509752,
+   "ink": 305368,
+   "blank": 144868,
+   "disputed": 522352
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20250926051122",
+   "shape": [
+    2794,
+    26781
+   ],
+   "unlabelled": 71298203,
+   "ink": 1191977,
+   "blank": 354051,
+   "disputed": 1981883
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20250926165636",
+   "shape": [
+    2493,
+    14079
+   ],
+   "unlabelled": 34510032,
+   "ink": 165803,
+   "blank": 42539,
+   "disputed": 380573
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20250926203608",
+   "shape": [
+    2390,
+    12650
+   ],
+   "unlabelled": 29413830,
+   "ink": 223434,
+   "blank": 98931,
+   "disputed": 497305
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20250928235953",
+   "shape": [
+    2608,
+    27289
+   ],
+   "unlabelled": 66581499,
+   "ink": 1217933,
+   "blank": 807132,
+   "disputed": 2563148
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20250928235954",
+   "shape": [
+    311,
+    463
+   ],
+   "unlabelled": 127949,
+   "ink": 262,
+   "blank": 0,
+   "disputed": 15782
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20250929040153",
+   "shape": [
+    1738,
+    5814
+   ],
+   "unlabelled": 9184414,
+   "ink": 242852,
+   "blank": 282821,
+   "disputed": 394645
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20250930083742",
+   "shape": [
+    2618,
+    10624
+   ],
+   "unlabelled": 25803559,
+   "ink": 569273,
+   "blank": 495271,
+   "disputed": 945529
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20251001060526",
+   "shape": [
+    2441,
+    12765
+   ],
+   "unlabelled": 29282781,
+   "ink": 501961,
+   "blank": 274377,
+   "disputed": 1100246
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20260225160055",
+   "shape": [
+    340,
+    338
+   ],
+   "unlabelled": 102008,
+   "ink": 963,
+   "blank": 0,
+   "disputed": 11949
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20260226000000",
+   "shape": [
+    1133,
+    1838
+   ],
+   "unlabelled": 1902821,
+   "ink": 56842,
+   "blank": 52019,
+   "disputed": 70772
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20260226110425",
+   "shape": [
+    306,
+    495
+   ],
+   "unlabelled": 135660,
+   "ink": 0,
+   "blank": 0,
+   "disputed": 15810
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20260226113324",
+   "shape": [
+    309,
+    510
+   ],
+   "unlabelled": 142555,
+   "ink": 139,
+   "blank": 0,
+   "disputed": 14896
+  },
+  {
+   "scroll": "PHerc0814",
+   "segment": "20260226121302",
+   "shape": [
+    314,
+    510
+   ],
+   "unlabelled": 146498,
+   "ink": 918,
+   "blank": 0,
+   "disputed": 12724
+  }
+ ]
+}

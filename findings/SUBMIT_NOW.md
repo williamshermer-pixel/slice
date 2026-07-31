@@ -130,3 +130,78 @@ work gets *used*, and that starts with people seeing it. Worth adding the
 honest open question: PHerc0139 segments come back ~30% occupied with no
 contiguous column-sized field — is that expected ribbon geometry, or are we
 reading the masks wrong?
+
+---
+
+## ADDENDUM (2026-07-31 evening) — cross-energy consensus
+
+Append this to the END of the long "how does this increase the probability of
+reading complete scrolls" answer, after the "Known limits" paragraph. Nothing
+above changes.
+
+```
+ADDED THE SAME DAY — CROSS-ENERGY CONSENSUS (#193, and it upgrades the above).
+
+Three scrolls in the bucket were scanned twice at different photon energies and
+published twice with different recipes months apart: PHerc1667, PHerc0139 and
+PHerc0814, at 59 keV (the 1.129um-...-L1 flattening) and 78 keV (2.399um). The
+two share nothing but the papyrus. That makes a label's confidence measurable
+instead of chosen, which is the weakness in every ink label this field ships,
+including ours above: they rest on a threshold applied to one model over one
+volume, and no measurement says the threshold was right.
+
+Registration is not assumed. After resizing one canvas onto the other by the
+voxel ratio the best global fit is sx=1.000 sy=1.000 dy=0 dx=0 -- the two
+flattenings share a UV layout -- with residual local warp of median 0 px and
+IQR 45 px (0.8 mm), removed with a block phase-correlation field. Registering
+on the sheet mask instead is wrong and we report why: the 78 keV flattening
+recovers ~1.8x more sheet and drags the fit to a false sy=0.87.
+
+The two scans agree far above chance, and the effect strengthens exactly where
+it should. Sweeping the call threshold on one segment, enrichment over a rolled
+spatial null goes 4.3x at the top 20% of sheet to 69.3x at the top 1% -- the
+strongest ink in each scan is where two independent measurements converge
+hardest. Threshold-free Spearman is 0.374. Across all 62 paired segments the
+median is 0.456 on PHerc0139, 0.405 on 0814, 0.278 on 1667, every segment at
+the p floor of the null.
+
+The uncomfortable half of the same number, which we think the Annotation Team
+should have: at a top-decile call the two published maps agree on only about
+40% of each other's calls, and allowing a full letter of slack only reaches
+56%. Within strongly inked text they trace the same glyphs; the divergence is
+concentrated in marginal calls. Any single published map is a weaker ground
+truth than it looks.
+
+DELIVERABLE: consensus-certified labels for all 62 paired segments, plain
+zarr v2, one raster per segment at 18.064 um/px. 1 = both scans call it,
+2 = neither calls it and it clears both the spillover and sheet-edge keep-outs,
+3 = exactly one calls it, shipped as its own code rather than silently
+resolved. 73.1 cm2 of consensus ink, 215.2 cm2 of certified blank, 138.7 cm2
+disputed. Code 2 is the half a threshold cannot give you: "below my cut" is not
+"blank", but "neither of two independent scans saw anything, far from anything
+either did see" is a measurement. Every array carries its certificate in
+.zattrs. Labels only; no scroll image is redistributed.
+
+WE ALSO SEARCHED, AND FOUND NOTHING. Two independent scans average down
+independent noise, so a mark too faint for either detector alone can clear a
+joint threshold. We searched min(z59, z78) over every letter-sized box on sheet
+that both scans cover and neither calls: 128 cm2 on 1667, 108.5 cm2 on 0139.
+Nothing survives. On 0139 four segments produced a candidate, best p=0.015,
+but across 37 tests you expect ~1.9 at p<=0.05 by chance and nothing clears
+Bonferroni. The best-looking candidate reached p=0.019 after 999 nulls and then
+died to the render: it sat 0.78 mm from the sheet edge, under half a letter.
+
+That failure found a real flaw and we fixed it rather than dropping the
+candidate. Our letter-box accepted any box at least half on sheet, dividing a
+partial sum by a shrinking denominator -- and 60.6% of the search area lay
+within two letters of a sheet boundary, so the search was dominated by the
+region where its own statistic misbehaves. Boxes must now be 95% on shared
+sheet and the search is eroded 1.5 letters from every boundary. The 0139
+numbers above are post-fix; the earlier ones were contaminated and are marked
+as such in findings/CROSSENERGY_1667.md.
+
+Limitation, stated on every certificate: two energies share the papyrus, so
+agreement does not separate ink from sheet CONDITION. These labels are
+cross-scan certified, not condition-controlled -- the condition-control AUC in
+the #192 pairs is the measurement for that axis.
+```
