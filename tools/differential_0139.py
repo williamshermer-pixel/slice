@@ -29,9 +29,13 @@ HANDS = {
     # against Scroll 1's independently known 3.00 mm hand (tool reads 2.94).
     # Component-based heights are WRONG here -- binarized maps fragment letters
     # and the same method reads Scroll 1 as 0.58 mm.
-    # mode: "shape" needs stroke structure and only works well above ~2 mm,
-    # since the model emits predictions on a 0.29 mm grid; "envelope" reads
-    # letter-sized mass and is the honest setting below that.
+    # mode: "shape" needs stroke structure and only works well above ~2 mm.
+    # NOT a sampling limit -- maps are 9.03 um/px, so a 1.6 mm letter spans
+    # ~178 px. It is the model's field of view: a 256 px tile sees 578 um,
+    # smaller than one letter at every measured hand, so its response stays
+    # smooth at letter scale on small hands. "envelope" reads letter-sized
+    # mass and is the honest setting there (measured: shape recovers 9.9% of
+    # known letters at 1.61 mm, and works at 3.00 mm).
     "PHercParis4": ("scroll1",  3.00, 1.80, 4.60, 1.86, 6.18, "shape"),
     # 0139: recorded as 1.09 mm from the broken component method; band FWHM
     # says 1.61 mm. Using the corrected figure.

@@ -142,9 +142,20 @@ model knowledge. Corollary: PHerc0814 (18/19 auto-grown) shares the wall.
 binarized maps are 3–5× low (fragments, not letters). `tools/measure_hand.py`
 (band FWHM) validates at 2.94 vs Scroll 1's known 3.00 mm. Validated hands:
 Scroll 1 3.00 / 0500P2 1.92 / 0343P 1.67 / 1667 1.63 / **0139 1.61 (not
-1.09)** / 0814 1.28. The library writes small; Scroll 1 is the outlier; and
-everything but Scroll 1 sits between the model's 0.29 mm output grid and the
-~2 mm shape-resolution line. That band is the game.
+1.09)** / 0814 1.28. The library writes small; Scroll 1 is the outlier.
+
+**Correction to our own framing (same day):** we described this as a
+"resolution ceiling" against a 0.29 mm output grid. That number was a stale
+STRIDE setting, not the map resolution, and the framing was wrong. Measured:
+our maps are **9.03 µm/px**, so a 1.61 mm letter spans ~178 px — sampling was
+never the limit. What is real is the model's FIELD OF VIEW: a 256 px tile at
+2.258 µm sees **578 µm**, smaller than a single letter at EVERY hand we
+measured. The model is a local ink/texture detector; letterforms have to
+emerge from the assembled map rather than from the model recognising a
+letter. So the honest statement is that the model's response is smooth at
+letter scale on small hands (shape-gating recovers 9.9% of known letters at
+1.61 mm, and works at 3.00 mm) — a response characteristic, not a sampling
+ceiling. Whether native 1.129 µm input changes it is untested and open.
 
 **Ops lessons banked:** zombie pods (check `runtime`, not status); PIL bomb
 guard vs 200+ MP published maps; low aims land off-sheet; keep-out is a fixed
