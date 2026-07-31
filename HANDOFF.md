@@ -1,228 +1,140 @@
 # HANDOFF — read this first
 
-## ⚡⚡⚡⚡ THE SUBMISSION PACKAGE (2026-07-30, dawn) — READY. William's two clicks remain.
+*Rewritten 2026-07-31. Everything above the "UPDATE 2026-07-28" line is current
+state; below it is dated history, kept because the reasoning is load-bearing.
+Where they conflict, this block wins.*
 
-**The pivot that matters: we read their wishlist.** Only THREE `help wanted`
-issues exist on ScrollPrize/villa; #192 (accurate 3d ink labels, "good first
-issue") and #193 (label-generation methods) are what this campaign already
-built. The submission now DELIVERS them instead of the treasure hunt:
+---
 
-- **`tools/make_labels_3d.py`** — zarr-v2 label windows (label/ + conf/) on
-  the surface volume's own grid, band-restricted z27..89, certificates in
-  .zattrs (floor @0.2% blank FPR, condition-control AUC, provenance);
-  certified-blank negatives ≥1.5mm from any call. `tools/fetch_pair.py`
-  assembles the image half from the bucket (CC BY-NC never redistributed).
-  ~130+ windows generated to `out/labels3d/` (0500P2 finishing), 2 sample
-  windows COMMITTED in `samples/labels3d/`.
-- **README** leads with the deliverable + quickstart; **/record** carries the
-  deliverable section (deployed, verified live); **SUBMISSION_DRAFT.md v3**
-  is the Discord post, rewritten to lead with #192/#193.
+# 🔴 NOT SUBMITTED YET. Deadline 11:59pm Pacific, **July 31 2026**.
 
-**WILLIAM'S TWO CLICKS (deadline July 31 23:59 PT):**
-1. `gh repo edit williamshermer-pixel/slice --visibility public`
-2. Post `findings/SUBMISSION_DRAFT.md` v3's post-block in the Vesuvius
-   Discord as `willsher` — attach `out/lostbook/evidence_hunt.png` or link
-   /record for the visual.
+**Discord is NOT the submission mechanism.** That was wrong in every earlier
+version of this file. The route is a Google Form, and it requires a pull
+request. All three steps are staged and written out in
+**`findings/SUBMIT_NOW.md`** — open that file and follow it.
 
-Honest odds stated to William: likely $1,000–$2,500 this month, minority-real
-shot at $10k, $20k improbable until usage exists — August 31 is the swing,
-and this entry starts that clock.
+1. **Open the PR** (branch already pushed):
+   https://github.com/ScrollPrize/villa/compare/main...williamshermer-pixel:villa:slice-ink-labels?expand=1
+2. **Fill the form**: https://forms.gle/xoF5C3QsYutKP97x7 — every answer is
+   drafted in `SUBMIT_NOW.md`, including the long "how does this increase the
+   probability of reading scrolls" field.
+3. **Discord** (optional, not the mechanism): https://discord.gg/V4fJhvtaQn as
+   `willsher`; post text is in `findings/SUBMISSION_DRAFT.md`.
 
-## ⚡⚡⚡ LIVE STATE (2026-07-30, night closed) — NO PODS RUNNING. All terminated, verified zero billing. Four scrolls searched, all quiet at measured sensitivity — see "THE NIGHT OF FOUR SCROLLS" in `findings/CALIBRATED_HUNT.md` (adaptation is segmentation-bound: +0.094 curated vs +0.011 auto-segs; validated hands table; ranked remaining lanes). The block below is the operating manual for re-flying any scroll.
+Requirements met: repo is **PUBLIC**, MIT for code, CC BY-NC honoured for data.
 
-## (earlier tonight — fleet runbook, still current)
+---
 
-**A PHerc0500P2 fleet was IN FLIGHT when this was written** — 5 pods, $0.69/hr
-each: hub `novnv95wlh054y`, workers `k8u6o3eowqaxgf` `s5rahah374ryrv`
-`sg4kmun75ir5z0` `l40ouljol8p6r2`. 38 segments, base iter-5, aims
-0.35/0.20/0.08, output to `out/p0500p2/`. FIRST ACTIONS of any successor:
+## What is being submitted
 
-```bash
-SCROLL=PHerc0500P2 OUTDIR=p0500p2 python3 tools/fleet_lostbook.py status
-SCROLL=PHerc0500P2 OUTDIR=p0500p2 python3 tools/fleet_lostbook.py harvest
-SCROLL=PHerc0500P2 OUTDIR=p0500p2 python3 tools/fleet_lostbook.py terminate  # ALWAYS
-```
-Verify zero billing after: `GET /v1/pods` must show no RUNNING pod — and check
-`runtime` presence per pod, NOT `desiredStatus`: one pod tonight sat RUNNING
-for an hour, billing, with no GPU ever assigned (the zombie lesson).
+Answers **villa #192** (accurate 3D ink labels) and **#193** (label-generation
+methods) — the only open `help wanted` issues that this work can address.
 
-**Then the analysis chain, in this order (each env-selected by SCROLL):**
-```bash
-SCROLL=PHerc0500P2 python3 tools/calibrate_floor.py       # CHECK AUC FIRST ->
-#   if AUC vs published calls << 0.80, the z27 depth band is WRONG for this
-#   scroll (verified only on Scroll1+0139) — sweep z before believing anything
-SCROLL=PHerc0500P2 python3 tools/letterscale_0139.py       # detector + power
-SCROLL=PHerc0500P2 python3 tools/condition_control_0139.py # ink vs preservation
-SCROLL=PHerc0500P2 python3 tools/hunt_0139.py              # + mandatory spatial null
-SCROLL=PHerc0500P2 python3 tools/evidence_hunt.py          # render for William
-```
-Survivors (if any) go to William's eyes as renders BEFORE being believed.
+**The deliverable: ready-to-run image/label pairs.** Plain zarr v2, `image/`
+and `label/` in one directory, 512³ training tiles, nothing to crop or
+preprocess. Codes: `0` unlabelled · `1` ink · `2` certified blank · `3` ink
+present, depth ambiguous. **28 pairs pass the gate** (22 ink-rich, 6
+negative-rich); 2 samples committed in `samples/pairs/`, the rest regenerate.
 
-### What changed today, newest first
+**Depth is recovered, not projected** — the thing #192 explicitly asks for.
+The model is fixed at 62 input layers and returns a flat map, so depth comes
+from two independent signals intersected: slide the reading window (offsets
+0,14,27,41,54) and take each pixel's peak response; then narrow it with the
+crop's own intensity profile, which cannot see ink (density contrast r≈0.002)
+but locates the sheet ink must lie on. Flat profiles are labelled *ambiguous*
+rather than guessed. Verified: mean depth sd **7.3 layers across ~13 distinct
+centres** per crop.
 
-- **THE INSTRUMENT IS SCROLL-AGNOSTIC.** `HANDS` table in
-  `tools/differential_0139.py` = per-scribe hand + gate mode; everything
-  (fleet, floor, detector, control, hunt, harness) selects by `SCROLL` env.
-  Knobs: `OUTDIR`, `WEIGHTS=none|tuned`, `AIMS`, `ONLY`, `MIN_CLUSTERS`,
-  `CLEAR_MM`, `MODE`. Calibration harness passes 7/7 on both shape (Scroll 1)
-  and envelope (0139) modes: `SCROLL=... python3 tools/test_differential.py`.
+**Every pair carries a quality certificate** in `.zattrs`: the ink floor and
+its measured **0.2% false-positive rate** on known-blank papyrus, the
+**condition-control AUC** (ink vs blank sheet of the *same* preservation —
+the direct test for #192's stated fear that labels teach the surface), the
+depth band, model, recipe, provenance.
 
-- **HAND MEASUREMENT: the component method is BROKEN and one of our own
-  numbers was wrong.** Component-based letter height on binarized maps
-  fragments letters into strokes — it reads Scroll 1's known 3.00 mm hand as
-  0.58 mm. `tools/measure_hand.py` (band-FWHM: fold the map on its line
-  pitch, width at half max) validates at **2.94 mm vs the known 3.00**.
-  CONSEQUENCE: **0139's hand is ~1.61 mm, not the 1.09 mm recorded below**
-  (same broken method — the 1.09 figure is superseded everywhere it appears).
-  First measurements, all validated-method: **0500P2 1.92 / 0343P 1.67 /
-  1667 1.63 / 0814 1.28 mm** (`findings/hands.json`). The library writes
-  SMALL: Scroll 1's 3 mm is the outlier, and everything else sits between the
-  model's 0.29 mm output grid and the ~2 mm where stroke shape resolves.
-  That band is why searches return mass, not letterforms.
+## The five results worth citing
 
-- **SCROLL 1: QUIET, at the strongest sensitivity yet.** 50 segments mapped
-  (fleet of 5; capacity ran out at pod 6 of 8, so 30 segs uncovered). Detector
-  at the 3 mm hand: **AUC 0.986, 97.8% per-letter, condition control HOLDS at
-  0.988** — the ink-vs-preservation separation reproduced on a second scribe.
-  5 single-cluster candidates; ALL died the spatial null (22–24/24 rolls),
-  and stayed dead with the keep-out swept 1.5→0.6 mm to hunt right against
-  the text. A read scroll, honestly re-searched, honestly silent.
+| result | number |
+| --- | --- |
+| **Depth band** — read layers 27–89, not the stack centre | AUC **0.654 → 0.944** on known Scroll 1 letters |
+| **Condition control** — ink vs same-preservation blank sheet | **0.96–0.99** curated · 0.84 auto-grown |
+| **Hand measurement** — components are broken, band-FWHM works | reads Scroll 1's known 3.00 mm as **0.58** vs **2.94** |
+| **Fine-tuning is segmentation-bound** | **+0.094** curated vs **+0.011** auto-grown |
+| **Four scrolls searched, all quiet** | at 26–98% measured per-letter sensitivity |
 
-- **Fleet plumbing lessons (all fixed in tools):** Scroll 1's published ds8
-  ink JPEGs are 200+ MP → PIL's decompression-bomb guard kills whole segments
-  (lift `Image.MAX_IMAGE_PIXELS`); low coverage aims land OFF-SHEET on big
-  segments (the differential wants uncalled sheet BESIDE text — aim high);
-  zombie pods bill without GPUs (check `runtime`, not `desiredStatus`);
-  keep-out must be a FIXED physical distance (~1.5 mm, the blend kernel),
-  never proportional to the hand (2×BOX at 3 mm = no legal null anywhere).
+## Corrections this project made to itself (the credibility asset)
 
-- **THE SITE (deadline material, live):** slice-site-alpha.vercel.app now
-  carries **/record** — the campaign's public results page (thesis figure
-  0.654→0.944, calibrated-hunt plate, corrections ledger with struck-not-
-  erased retractions, per-scribe hands, physics table) and **the reveal
-  banner**: an 18 s instrument-trace wipe where the tuned model's ink burns
-  onto the real papyrus band (screen blend, both frames real data, the site's
-  only animation; reduced-motion gets a still split). Viewer masthead links
-  it. Deploy runbook: rsync to `~/slice-site` (exclude tools/findings/md) →
-  `vercel deploy --prod --yes`.
+- **Two announced findings withdrawn.** The 2026-07-29 differential ("9 of 22
+  segments carry structure") used a *relative* threshold — 23 of 24 rolled
+  copies of our own map reproduced it. Retraction published.
+- **PHerc0139's hand is 1.61 mm, not 1.09.** The 1.09 came from the broken
+  component method. Corrected everywhere; older mentions are labelled
+  superseded.
+- **The "0.29 mm output grid" framing was wrong** — that was a stale stride,
+  not the map resolution. Maps are 9.03 µm/px; a 1.6 mm letter spans ~178 px.
+  The real constraint is field of view: a 256 px tile sees **578 µm**, less
+  than one letter at every measured hand.
+- **v1 of the labels was exactly the projection #192 forbids** — one 2D map
+  copied into 62 layers. Thrown away, rebuilt.
+- **A pre-submission adversarial review (second model) caught three more**:
+  labels cut at pre-snap coordinates while images fetched at snapped ones
+  (up to 124 px misregistration); "certified blank" was a bare probability cut
+  with no keep-out; and the QC gate read only chunk `0.0.0`, measuring the
+  top-left **quarter** of every crop while reporting whole-crop numbers. All
+  fixed, and the gate now checks registration too.
 
-- **DEADLINE: July 31 23:59 PT is TOMORROW. Repo flip + Discord post remain
-  William's two clicks.** Realistic tier this month: $1,000–$2,500 (usage,
-  the heaviest criterion, starts at zero until it ships); August 31 is the
-  real swing. The post should lead with the /record URL.
+## Measured hands (band-FWHM, the only trusted method)
 
-### Where new ink actually stands after tonight
+Scroll 1 **3.00** · 0500P2 1.92 · 0343P 1.67 · 1667 1.63 · **0139 1.61** ·
+0814 1.28 mm. The library writes small; Scroll 1 is the outlier. Everything
+else sits between the model's 578 µm field of view and the ~2 mm where stroke
+shape becomes resolvable — which is why those scrolls return letter-sized
+*mass* rather than letterforms. `findings/hands.json`, `tools/measure_hand.py`.
 
-0139: quiet (77 windows, calibrated). Scroll 1: quiet (37 usable windows,
-97.8% sensitivity — but it is the READ scroll; new ink was always unlikely).
-In flight: 0500P2 (38 segs, largest unworked hand at 1.92 mm, never searched
-by anyone). Remaining lanes, in order of promise: (1) 0500P2 + 0343P + 0814
-with this instrument; (2) per-scribe fine-tune on each (bought +0.09 AUC on
-0139; would push the sub-2 mm hands toward resolvability — `pod_train2.py`
-recipe); (3) the 0139 title segment at native res; (4) Scroll 1's uncovered
-30 segments. PHerc0172/1447 stay physically blind (1.9/1.7 voxels through
-the ink). The 13 scrolls with no surface volumes stay blocked on
-segmentation, not on us.
+## Where things live
 
-## ⚡⚡ EARLIER TODAY (2026-07-30) — THE CALIBRATED HUNT. Read `findings/CALIBRATED_HUNT.md`.
-### (0139 hand figure of 1.09 mm below is SUPERSEDED — validated measure is 1.61 mm)
+| | |
+| --- | --- |
+| Source | `~/Desktop/InK` → `github.com/williamshermer-pixel/slice` **PUBLIC**, MIT |
+| Live | slice-site-alpha.vercel.app · `/record` results · `/lab` depth sheet |
+| Deploy | rsync to `~/slice-site` (exclude tools/findings/out/samples/*.md) → `vercel deploy --prod --yes` |
+| Submission | `findings/SUBMIT_NOW.md` (steps) · `SUBMISSION_DRAFT.md` (Discord text) |
+| Findings | `findings/CALIBRATED_HUNT.md` — the campaign, including retractions |
+| Deliverable | `out/pairs/` (gitignored) · `samples/pairs/` (committed) |
+| Instrument | `differential_0139.py` (HANDS table, env `SCROLL`), `calibrate_floor`, `letterscale`, `condition_control`, `hunt`, `verify_pairs` |
+| Generator | `pod_depth_profile.py` (GPU) → `make_pairs.py` → `verify_pairs.py` |
+| Fleet | `fleet_lostbook.py` — `launch/upload/status/harvest/terminate/train/profile` |
+| Skill | `~/.claude/skills/vesuvius-scrolls/` — auto-loads on any scroll work |
 
-**No new letters. But the instrument is finally honest, and two prior results
-are WITHDRAWN.**
+## Rules that cost money to learn
 
-- **The 2026-07-29 differential is withdrawn.** Its "9 of 22 segments carry
-  letter-sized our-hot/theirs-cold structure" used a RELATIVE threshold
-  (top 4% of our map) with no null. Re-run tonight it produced 3 candidates and
-  **23 of 24 spatial-null rolls reproduced them** (p up to 0.92). A relative
-  threshold selects 4% of pixels whether ink exists or not.
-- **Two silent bugs found:** the p96 mask went EMPTY whenever >4% of a map
-  saturated (confident silence on our hottest maps), and published-map
-  alignment assumed 8× downsample vs the true 8.0006.
-- **The replacement instrument, all measured:** letter-scale box mean at his
-  1.09 mm hand — **AUC 0.981**, **77.7% per-letter detection** at 0.1% FPR
-  (per-pixel thresholding managed only 9.9%); **CONDITION-CONTROLLED AUC
-  0.961** with letters **3.8×** above blank sheet of the SAME condition beside
-  them (the ink-vs-preservation separation this project had never achieved);
-  spillover-safe null (≥2 letter-widths from any called pixel); power **99% at
-  five hidden letters**.
-- **Result: 78 windows across all 38 PHerc0139 segments, ONE candidate, ZERO
-  survivors.** The candidate sat in the **title segment**
-  (`20260422000000-title`, 2 clusters, peak 0.382) and died at the spatial null
-  (13/24 rolls matched, p=0.56). The margins of *On Gods* are quiet AT A KNOWN
-  SENSITIVITY — a calibrated negative, not a blind one.
-  `out/lostbook/`, render `out/lostbook/evidence_hunt.png`.
-  **Loose end worth pulling: the title region deserves a dedicated native-res
-  pass, not one margin-aimed window** — titles are the highest-value target on
-  any scroll and this one has never been searched properly.
-- **Bounded by:** the model was fine-tuned on this scroll's own published
-  calls, so it is biased toward agreeing with them; and "known letters" are
-  published-detector output, not human readings — at 1.09 mm neither map
-  resolves letterforms, only letter-sized masses.
-- **NEXT, and it is the strong play:** this detector is scroll-agnostic and
-  never yet aimed at a scroll it can resolve. **Run it on Scroll 1's 3 mm
-  hand** (where our renderer demonstrably draws letterforms) and on 1667/0814
-  at their measured hands. Every published map on every scroll was binarized
-  identically, so the discarded band is the hunting ground everywhere.
-  Tools: `hunt_0139.py` + `letterscale_0139.py` + `condition_control_0139.py`
-  (retarget TARGETS/hand constants), fleet via `fleet_lostbook.py`.
-- Fleet plumbing lesson: the RunPod proxy WAF **403s python-urllib's user
-  agent** (broke upload, pod-side fetch AND harvest — use curl or spoof the
-  UA), kills PUT bodies much over 8 MB, and the current pytorch image needs
-  `pip install hf_transfer`.
+- **Read the live wishlist before building.** Three days went to an
+  unrequested goal. `gh issue list --repo ScrollPrize/villa --label "help wanted"`
+- **Relative thresholds are worthless alone** — pair with an absolute floor
+  calibrated at a stated FPR, and null-test every survivor.
+- **Condition, not ink, is the standing confound.** Draw the null from blank
+  sheet *inside* the text block.
+- **Terminate pods at harvest, not at the end.** Check `runtime`, not
+  `desiredStatus` — a zombie billed an hour with no GPU.
+- The RunPod proxy WAF **403s python-urllib**; PIL's bomb guard kills 200+ MP
+  published maps; harvest must never refetch files it already holds (a dead
+  pod's failed fetch deleted 42 metas).
+- **Every finding ships as a render to William's eyes before it is believed.**
 
-## ⚡ STATE OF THE WORLD (2026-07-29 end — superseded above where they conflict)
+## Next, ranked (August 31 is the real swing)
 
-**What exists:** a PROVEN ink-detection pipeline (streams any scroll from
-the public bucket → production-spec renderer: model
-`scrollprize/PHerc.1667-iteration-5`, depth band **z27..z89**,
-clip[0,200]/255, tiles 256/stride 64, sigmoid-BEFORE-blend, 4-way TTA,
-Hann window, max-stretch + defog finish = **AUC 0.944 & drawn letterforms
-on Scroll 1 ground truth**; canonical code `tools/pod_final.py`). Plus:
-the regenerator (native-res surface rendering, proven on Scroll 1,
-`tools/regen_s1.py` — mesh coords are AS-PUBLISHED, native volume is a
-partial scan), per-scroll depth calibration, per-scribe hand measurement
-(0139: 1.09 mm letters / 4.57 mm pitch), fleet orchestration (RunPod REST,
-key in `~/.comfyui-mcp/.env`, ALWAYS terminate pods), the differential
-search (ours-hot ∩ published-cold — published maps are binarized), and
-laptop-side sweep/gallery tooling (`~/ink-ml/venv`: torch 2.2.2,
-transformers 4.57.6, numpy<2).
-
-**What was found:** no new letters (18 mechanisms + every ML candidate
-died honestly); the depth-band bug (0.654→0.944); 0139's hand is BELOW
-the model's resolution (envelope-only there); 9-segment differential
-structure on 0139 that failed shape inspection; native 1.129 µm data is
-public for 17 segments; PHerc0172 no-lead bound; the whole story is in
-the dated sections below.
-
-**What to do next, in order:** (1) William reads
-`findings/SUBMISSION_DRAFT.md` → flip repo public → Discord post,
-**deadline July 31 23:59 PT**; (2) fly the **Scroll 1 differential**
-(production renderer + defog on its 81 segments, ours-hot vs
-published-cold — the best remaining shot at findable letters); (3)
-implement the reader per `findings/READER_DESIGN.md` (calibration
-harness FIRST); (4) harvest the honest-bootstrap A/B if pod
-ju1gcx1wkrg6gq finished (then TERMINATE IT — check `GET /v1/pods`).
-
-**LATE ADD — honest bootstrap A/B: 0.850 → 0.944 (+0.094) on held-out
-0139 text with the FIXED renderer.** The tuned model now reads the lost
-book's known text at Scroll-1-letters level. Weights:
-`out/bootstrap/tuned_0139_honest.pt` (+ holdout maps beside it). This
-upgrades the reader's odds on 0139 substantially — the differential and
-envelope-mode work should use THIS model's maps.
-
-**Repo state:** everything committed & pushed to the PRIVATE GitHub
-(`williamshermer-pixel/slice`, commit b455d4e): all tools/, findings/
-(incl. SUBMISSION_DRAFT v2, READER_DESIGN, key renders in
-findings/renders/). out/, *.npy, *.pt, mesh tifs are gitignored (big
-binaries live on disk only — the tuned weights are NOT in git). Going
-PUBLIC is the submission step, William's two clicks.
-
-**House rules:** render before believing; every finding goes to William's
-eyes; per-scribe calibration always; no generative models on evidence;
-publish negatives; terminate pods.
-
-Session of 2026-07-26/27, updated 2026-07-28 evening. Everything below is
-measured unless flagged otherwise.
+1. **Retrain on our own labels** — the loop that has produced every reading in
+   this field: better labels → better model → new text. We now make labels.
+2. **The untried models**: `scrollprize/ink_canonical_2um` (r152), and native
+   **1.129 µm** input, which exists in the bucket for some segments and has
+   never been fed to the CNN. New *information*, unlike anything tried so far.
+3. **Answer #193's hard case** — labels where no segmentation exists. Conceded
+   openly in the submission; it is the most valuable open lane.
+4. **Wide-field assembly.** Every search used 9.25 mm windows ≈ 2 text lines;
+   a column is 30–50 mm. `pod_wide.py` + `stitch_wide.py` are built but the
+   0139 segments are ~30% occupied ribbons with no contiguous column-sized
+   field — ask the Discord whether that is expected geometry.
+5. **Usage is the heaviest judging criterion and ours starts at zero.** Answer
+   issues, generate windows on request, be present in the thread.
 
 ## UPDATE 2026-07-28 — why every run kept dying, and the fix
 
