@@ -1,5 +1,33 @@
 # HANDOFF — read this first
 
+## ⚡⚡⚡⚡ THE SUBMISSION PACKAGE (2026-07-30, dawn) — READY. William's two clicks remain.
+
+**The pivot that matters: we read their wishlist.** Only THREE `help wanted`
+issues exist on ScrollPrize/villa; #192 (accurate 3d ink labels, "good first
+issue") and #193 (label-generation methods) are what this campaign already
+built. The submission now DELIVERS them instead of the treasure hunt:
+
+- **`tools/make_labels_3d.py`** — zarr-v2 label windows (label/ + conf/) on
+  the surface volume's own grid, band-restricted z27..89, certificates in
+  .zattrs (floor @0.2% blank FPR, condition-control AUC, provenance);
+  certified-blank negatives ≥1.5mm from any call. `tools/fetch_pair.py`
+  assembles the image half from the bucket (CC BY-NC never redistributed).
+  ~130+ windows generated to `out/labels3d/` (0500P2 finishing), 2 sample
+  windows COMMITTED in `samples/labels3d/`.
+- **README** leads with the deliverable + quickstart; **/record** carries the
+  deliverable section (deployed, verified live); **SUBMISSION_DRAFT.md v3**
+  is the Discord post, rewritten to lead with #192/#193.
+
+**WILLIAM'S TWO CLICKS (deadline July 31 23:59 PT):**
+1. `gh repo edit williamshermer-pixel/slice --visibility public`
+2. Post `findings/SUBMISSION_DRAFT.md` v3's post-block in the Vesuvius
+   Discord as `willsher` — attach `out/lostbook/evidence_hunt.png` or link
+   /record for the visual.
+
+Honest odds stated to William: likely $1,000–$2,500 this month, minority-real
+shot at $10k, $20k improbable until usage exists — August 31 is the swing,
+and this entry starts that clock.
+
 ## ⚡⚡⚡ LIVE STATE (2026-07-30, night closed) — NO PODS RUNNING. All terminated, verified zero billing. Four scrolls searched, all quiet at measured sensitivity — see "THE NIGHT OF FOUR SCROLLS" in `findings/CALIBRATED_HUNT.md` (adaptation is segmentation-bound: +0.094 curated vs +0.011 auto-segs; validated hands table; ranked remaining lanes). The block below is the operating manual for re-flying any scroll.
 
 ## (earlier tonight — fleet runbook, still current)
