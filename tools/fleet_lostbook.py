@@ -195,7 +195,7 @@ def harvest():
             names = []
             for wi in range(3):
                 for si in range(p["n_segs"]):
-                    for pre in ("map", "tex", "meta"):
+                    for pre in ("map", "prof", "tex", "meta"):
                         ext = "json" if pre == "meta" else "npy"
                         names.append(f"{pre}_{p['tag']}_{si}_{wi}.{ext}")
             names += ["progress.txt", "done.json", "error.txt"]
@@ -252,6 +252,40 @@ def train():
     print(f"state -> {tdir}/fleet.json  (harvest with OUTDIR={os.path.basename(tdir)})")
 
 
+def profile():
+    """Depth-profile fleet: true-3D labels for #192. Sliding 62-layer window."""
+    ss = segs()
+    n = int(os.environ.get("NPODS", "3"))
+    offs = os.environ.get("OFFSETS", "0,14,27,41,54")
+    shards = [ss[i::n] for i in range(n)]
+    pdir = os.path.join(ROOT, "out",
+                        os.environ.get("OUTDIR", "lostbook") + "_prof")
+    os.makedirs(pdir, exist_ok=True)
+    pods = []
+    for i, sh in enumerate(shards):
+        if not sh:
+            continue
+        src = open(os.path.join(ROOT, "tools", "pod_depth_profile.py")).read()
+        src = src.replace("__SEGS__", json.dumps(sh)).replace("__TAG__", f"p{i}")
+        src = src.replace("__OFFSETS__",
+                          json.dumps([int(o) for o in offs.split(",")]))
+        src = src.replace("__AIMS__",
+                          json.dumps([float(a) for a in AIMS.split(",")]))
+        b64 = base64.b64encode(src.encode()).decode()
+        cmd = (f"cd /workspace && pip install -q transformers==4.57.6 pillow "
+               f"hf_transfer && echo '{b64}' | base64 -d > /workspace/job.py && "
+               f"python /workspace/job.py")
+        pod = create_pod(f"{SCROLL.lower()}-prof{i}", cmd)
+        pods.append({"id": pod["id"], "name": f"prof{i}", "tag": f"p{i}",
+                     "n_segs": len(sh)})
+        print(f"prof{i} {pod['id']} ({len(sh)} segs)")
+    json.dump({"pods": pods, "scroll": SCROLL, "offsets": offs,
+               "launched": time.strftime("%F %T")},
+              open(os.path.join(pdir, "fleet.json"), "w"), indent=1)
+    print(f"state -> {pdir}/fleet.json  (harvest with "
+          f"OUTDIR={os.path.basename(pdir)})")
+
+
 def terminate():
     st = json.load(open(STATE))
     for p in st["pods"]:
@@ -273,6 +307,8 @@ if __name__ == "__main__":
         upload()
     elif cmd == "harvest":
         harvest()
+    elif cmd == "profile":
+        profile()
     elif cmd == "train":
         train()
     elif cmd == "terminate":
