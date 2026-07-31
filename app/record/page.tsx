@@ -330,6 +330,41 @@ export default function RecordPage() {
         </p>
       </Section>
 
+      {/* ---- the deliverable ------------------------------------------ */}
+      <Section
+        eyebrow="Deliverable · villa #192 / #193"
+        title="3D ink labels with the quality measured in, not assumed"
+      >
+        <p>
+          Issue #192 asks for ink labels representing{" "}
+          <em className="font-display">only the detectable ink patterns</em>,
+          in true 3D — its stated fear being models that learn the{" "}
+          <em className="font-display">surface</em> rather than the ink. The
+          campaign above is exactly the machinery that concern requires, so its
+          output now ships as the labels themselves: plain zarr v2, one window
+          per directory, on the surface volume&apos;s own grid.
+        </p>
+        <div className="ledger mt-4">
+          <Row label="label / codes">0 unlabelled · 1 ink · 2 certified blank</Row>
+          <Row label="ink floor">calibrated at 0.2% FPR on known-blank sheet</Row>
+          <Row label="surface-confound control">
+            AUC 0.96–0.99 curated · 0.84 auto-grown (in every .zattrs)
+          </Row>
+          <Row label="depth">measured band z27..z89 — never full-stack projection</Row>
+          <Row label="negatives">≥1.5 mm from any call, outside model spillover</Row>
+          <Row label="format">zarr v2 / zlib · conf/ carries raw probability</Row>
+        </div>
+        <p className="mt-4 text-ash">
+          Generator and pair-fetcher are in the repo
+          (<span className="text-ochre">tools/make_labels_3d.py</span>,{" "}
+          <span className="text-ochre">tools/fetch_pair.py</span>); sample
+          windows in <span className="text-ochre">samples/labels3d/</span>.
+          Scroll data is never redistributed — the image half of each pair is
+          fetched from the public bucket on your machine. Windows on request:
+          generation costs about one GPU-minute each.
+        </p>
+      </Section>
+
       {/* ---- reproduce ------------------------------------------------ */}
       <Section eyebrow="Reproduce" title="Everything here is scripted">
         <p className="text-ash">

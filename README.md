@@ -1,5 +1,58 @@
 # Slice
 
+Calibrated ink-detection tooling and a browser-native viewer for the
+Herculaneum scrolls (Vesuvius Challenge).
+
+Two things live here:
+
+1. **3D ink labels with quality certificates** — machine-generated
+   image/label pairs answering
+   [ScrollPrize/villa #192](https://github.com/ScrollPrize/villa/issues/192)
+   ("accurate 3d ink labels") and
+   [#193](https://github.com/ScrollPrize/villa/issues/193) (label-generation
+   methods), plus the calibration campaign behind them: per-scroll depth-band
+   measurement, per-scribe hand measurement, condition-controlled detection,
+   spatial-null validation — and two of our own findings publicly withdrawn
+   by those controls. Full write-up: `findings/CALIBRATED_HUNT.md` and
+   https://slice-site-alpha.vercel.app/record
+2. **A viewer** — streams the public bucket straight into your browser. No
+   download, no login: https://slice-site-alpha.vercel.app
+
+## The labels (issue #192) — quickstart
+
+```bash
+# regenerate every label window from the calibrated maps (laptop, no GPU)
+python3 tools/make_labels_3d.py
+
+# assemble a ready-to-run image/label training pair for one window
+python3 tools/fetch_pair.py out/labels3d/PHercParis4/<window-dir>
+```
+
+Sample label windows ship in `samples/labels3d/` — plain **zarr v2, zlib**
+(any zarr client reads them). Per window:
+
+| array | shape | meaning |
+| --- | --- | --- |
+| `label/` | (D, 4096, 4096) uint8 | 0 unlabelled · 1 **ink** at a calibrated floor · 2 **certified blank** |
+| `conf/`  | (4096, 4096) uint8 | model probability × 255 |
+
+Every `.zattrs` carries the full quality certificate: source volume + window,
+the measured ink depth band (z27..z89 — a blindly-centred band scores AUC
+0.654 vs 0.944), the floor and its measured **0.2% false-positive rate on
+known-blank papyrus**, and the **condition-control AUC** — ink separated from
+blank sheet *inside the text block*, the direct test for "the model learned
+surface, not ink" (#192's stated concern). Negatives (label 2) are certified:
+≥1.5 mm from any published call, outside measured model spillover. The scroll
+data itself is never redistributed; `fetch_pair.py` pulls the image half from
+the public bucket on your machine.
+
+Which windows would be most useful next? Open an issue — generation costs
+about one GPU-minute per 4096² window.
+
+---
+
+## The viewer
+
 Browser-native viewer for Herculaneum scroll micro-CT volumes. Streams OME-Zarr
 chunks straight from the Vesuvius Challenge public S3 bucket — no download, no
 credentials, no local install.
