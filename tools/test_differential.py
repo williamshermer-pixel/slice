@@ -21,7 +21,7 @@ def blank(n=1024):
 
 
 def plant_letters(field, n=5, size=None, advance=None):
-    """Letters at his hand (1.09 mm tall), wrapping to new lines at his
+    """Letters at the configured hand, wrapping to new lines at the
     measured 4.57 mm pitch so any count actually fits on the canvas."""
     size = size or int(D.LETTER_MM * D.MM)
     advance = advance or int(D.ADVANCE)      # ~77 px

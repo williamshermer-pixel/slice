@@ -1,5 +1,6 @@
 """FLEET SWEEP — grade every fleet map under the lost-book scribe's OWN hand
-(measured 2026-07-29: letters median 1.09 mm, line pitch 4.57 mm). Gallery
+(SUPERSEDED figures: 1.09 mm / 4.57 mm came from the broken component
+method; validated band-FWHM values are 1.61 mm / 4.32 mm). Gallery
 of the top windows across all segments for William's eyes.
 
 Usage: python3 fleet_sweep.py <dir-with-pred_*.npy-and-meta_*.json>

@@ -3,7 +3,9 @@
 Published 0139 maps are binarized (p50=0, faint band 0.3-0.5%): everything
 marginal was discarded at publication. The hunting ground is where OUR raw
 map is confident and the published map is empty. Gates use 0139's OWN
-measured hand (letters median 1.09 mm, pitch 4.57 mm, advance 0.70 mm) —
+measured hand (letters median 1.61 mm, pitch 4.32 mm — band-FWHM, the
+validated measure; the 1.09/4.57 figures in older notes came from the
+broken component method) —
 per-scribe doctrine. Output: ranked candidates + gallery renders.
 
 Run after `fleet_lostbook.py harvest`:  python3 tools/differential_0139.py
@@ -204,7 +206,7 @@ def gate(ours, pub, floor=None, mode=None):
                      only 9.9% of his known letters -> 26% power on ten
                      hidden letters, i.e. too blind to interpret.
     mode="envelope": size only, allowing merged runs up to three letters.
-                     Respects the resolution ceiling at his 1.09 mm hand
+                     Respects the response ceiling at his 1.61 mm hand
                      (READER_DESIGN's envelope mode). Discrimination then
                      comes from the ABSOLUTE floor plus a mandatory spatial
                      null, not from shape.

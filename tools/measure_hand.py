@@ -1,7 +1,7 @@
 """MEASURE A SCRIBE'S HAND from published ink maps — the gate that every
 search must be calibrated to, and the one this project has been burned by.
 
-Applying Scroll 1's 3.0 mm ruler to PHerc0139 (1.09 mm) manufactured
+Applying Scroll 1's 3.0 mm ruler to PHerc0139 (1.61 mm) manufactured
 candidates that had to be retracted. Before any scroll is searched, its own
 hand is measured here: letter height from connected components of the
 published calls, line pitch from row-projection autocorrelation.
@@ -160,7 +160,8 @@ def measure(scroll):
     mode = "shape" if med >= 2.0 else "envelope"
     print(f'  HANDS row -> "{scroll}": ("{scroll.lower()}", {med:.2f}, '
           f'{lo:.2f}, {hi:.2f}, {adv:.2f}, {pitch:.2f}, "{mode}"),')
-    print(f"  mode {mode}: the model emits 0.29 mm blocks, so a {med:.2f} mm "
+    print(f"  mode {mode}: the model's tile sees 578 um — less than one "
+          f"letter at {med:.2f} mm, so shape is "
           f"hand is {'resolvable as shape' if mode=='shape' else 'mass-only'}")
     return dict(scroll=scroll, letter_mm=round(med, 2), lo=round(lo, 2),
                 hi=round(hi, 2), advance_mm=round(adv, 2),

@@ -2,7 +2,7 @@
 against a LOCAL null.
 
 Why: per-pixel thresholding recovers only ~10-12% of this scribe's known
-letters (measured), because at his 1.09 mm hand few individual pixels clear a
+letters (measured), because at a ~1.6 mm hand few individual pixels clear a
 low-FPR floor. A letter is thousands of pixels, so the statistic should be the
 MEAN over a letter-sized box, not any single pixel.
 

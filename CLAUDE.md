@@ -17,7 +17,8 @@ monthly, deadline 11:59pm Pacific on the last day of each month. The best
 submission is guaranteed $20,000; tiers below are $10,000, $2,500 and $1,000.
 Multiple awards per month are permitted.
 
-Target: the **August 31, 2026** deadline.
+Target: **July 31, 2026** (submitted — labels for villa #192/#193),
+then **August 31, 2026** with a month of usage behind it.
 
 Judging criteria, which should shape technical decisions:
 
@@ -163,9 +164,11 @@ Verified in the bucket, July 2026:
   `<sample>/segments/<segid>/surface-volumes/*.zarr`, and are the same zarr v2
   the scroll volumes are — uint8, uncompressed, `dimension_separator: "/"`,
   multiscale. `openVolume`/`readSlice` read them unchanged.
-- **Only PHercParis4 (Scroll 1, already read) has any.** All thirteen unread
-  scrolls carry `segments/<id>/mesh/` and nothing flattened. Checked
-  exhaustively across every segment of every sample that has one.
+- **This changed in 2026.** Scroll 1 was once the only sample with surface
+  volumes; the bucket now carries `-L1` surface volumes for PHerc0139,
+  0814, 1667, 0343P and 0500P2 as well — 255 segments across 7 scrolls
+  have published ink detections. The label pairs in this repo are built
+  on PHerc0139's. Re-check the bucket rather than trusting this list.
 - Every sample has `representations/predictions/surfaces/*.zarr` — model output
   marking where sheet surfaces are, not flattened sheets.
 
@@ -267,8 +270,12 @@ what to do. Do not add marketing language.
 
 ## Constraints
 
-- **Never commit scroll data.** It is CC BY-NC 4.0, © Vesuvius Challenge. This
-  repo points a browser at the public bucket and redistributes nothing.
+- **Scroll data is CC BY-NC 4.0, © Vesuvius Challenge.** The VIEWER
+  redistributes none of it — every read is client-side from the public
+  bucket. The LABEL PAIRS deliberately do ship image crops (villa #192
+  asks for image/label pairs), under CC BY-NC with attribution in
+  `LICENSE-DATA` and per-pair `LICENCE-DATA.txt`. MIT covers code only.
+  Do not commit scroll data anywhere else.
 - **No GPU work on Vercel.** Serverless, seconds of compute. Training and
   volume processing belong on Modal or RunPod, with Vercel as front end.
 - Keep the read path client-side. Adding a backend forfeits the main advantage.

@@ -3,7 +3,7 @@ ink in PHerc0139 that the published maps never called.
 
 Design, each element forced by a measured failure:
 
-  detector    mean probability over a letter-sized box (his 1.09 mm hand).
+  detector    mean probability over a letter-sized box (1.61 mm hand).
               Per-pixel thresholding recovered only 10-12% of his known
               letters; the box-mean scores AUC 0.967 against blank sheet of
               the SAME condition, so it reads ink, not preservation.

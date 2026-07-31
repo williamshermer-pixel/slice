@@ -120,7 +120,7 @@ def main():
               f"caught only {100*powers[10]:.0f}% of the time. The 57-window "
               "silence is therefore\n"
               "NOT evidence of absence. It is a measurement of the resolution\n"
-              "ceiling: at his 1.09 mm hand the model responds to letters but\n"
+              "ceiling: at his 1.61 mm hand the model responds to letters but\n"
               "does not resolve their stroke structure. Report as a ceiling\n"
               "finding, never as 'the margins are empty'.")
     else:
