@@ -211,6 +211,44 @@ def harvest():
     print(f"harvested {got} files -> {OUT}")
 
 
+def train():
+    """One pod: fine-tune on this scroll's best text segments (picked by the
+    harvested windows' measured coverage), A/B on a held-out segment, then
+    remap every segment with tuned eyes. Output dir: <OUTDIR>_tuned."""
+    import glob
+    ss = segs()
+    # rank segments by their best harvested text-window coverage
+    cov = {}
+    for m in glob.glob(os.path.join(OUT, "meta_s*.json")):
+        d = json.load(open(m))
+        cov[d["seg"]] = max(cov.get(d["seg"], 0), d.get("cov", 0))
+    ranked = sorted([t for t in ss if cov.get(t["seg"], 0) >= 0.15],
+                    key=lambda t: -cov[t["seg"]])
+    if len(ranked) < 4:
+        sys.exit(f"only {len(ranked)} segments with >=15% text coverage — "
+                 "not enough to train + hold out")
+    train_segs = ranked[:min(7, len(ranked))]     # last one is held out
+    print("train:", [t["seg"].split("/")[-2][:20] for t in train_segs[:-1]])
+    print("holdout:", train_segs[-1]["seg"].split("/")[-2][:20])
+    src = open(os.path.join(ROOT, "tools", "pod_train_honest.py")).read()
+    src = src.replace("__SEGS__", json.dumps(train_segs))
+    src = src.replace("__SEGS_MAP__", json.dumps(ss)).replace("__TAG__", "t0")
+    b64 = base64.b64encode(src.encode()).decode()
+    cmd = (f"cd /workspace && pip install -q transformers==4.57.6 pillow "
+           f"hf_transfer && echo '{b64}' | base64 -d > /workspace/job.py && "
+           f"python /workspace/job.py")
+    pod = create_pod(f"{SCROLL.lower()}-train", cmd)
+    tdir = os.path.join(ROOT, "out", os.environ.get("OUTDIR", "lostbook") + "_tuned")
+    os.makedirs(tdir, exist_ok=True)
+    json.dump({"pods": [{"id": pod["id"], "name": f"{SCROLL.lower()}-train",
+                         "tag": "t0", "n_segs": len(ss)}],
+               "scroll": SCROLL, "weights": "trained-on-pod",
+               "launched": time.strftime("%F %T")},
+              open(os.path.join(tdir, "fleet.json"), "w"), indent=1)
+    print(f"train pod {pod['id']} -> {proxy(pod['id'])}")
+    print(f"state -> {tdir}/fleet.json  (harvest with OUTDIR={os.path.basename(tdir)})")
+
+
 def terminate():
     st = json.load(open(STATE))
     for p in st["pods"]:
@@ -232,6 +270,8 @@ if __name__ == "__main__":
         upload()
     elif cmd == "harvest":
         harvest()
+    elif cmd == "train":
+        train()
     elif cmd == "terminate":
         terminate()
     else:
