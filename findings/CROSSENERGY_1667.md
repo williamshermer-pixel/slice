@@ -176,6 +176,43 @@ The one candidate that looked real is worth recording, because of how it died.
 On 20260317000000 it reached p = 0.019 after 999 nulls — and the render put it
 **0.78 mm from the sheet edge, under half a letter.** Not ink. Geometry.
 
+### The negative is smaller than its area suggests
+
+"245 cm² searched, nothing found" was nearly shipped, and it is a misleading
+sentence. What the search runs over is what remains after removing called text,
+a 1.5 mm spillover keep-out and a 1.5-letter edge keep-out. On a page of text
+that remainder is not open field — it is **narrow ribbons between the lines.**
+
+Measured (`tools/effective_area.py`), on PHerc0139: of 110.4 cm² searched, only
+**26.0 cm² (23.6%)** has a full letter of clearance, and only **15.4 cm²** has
+room for a four-letter run. On one segment the largest circle that fits inside
+the search region at all is 1.20 letters across.
+
+So most of the searched area could not have concealed a letter no matter how
+sensitive the instrument was, and counting it inflates the result. The honest
+claims are:
+
+- **no unnoticed LETTER** over the *effective* area (26.0 cm² on 0139), not the
+  raw 110.4 cm²;
+- **no unnoticed WORD** over the four-letter-run area, 15.4 cm².
+
+This is a limit of where uncalled sheet exists, not of the statistic. Finding
+ink between tightly spaced lines of already-called text was always going to be
+the hardest place to find it.
+
+### The line test — the better-powered question
+
+A point maximum over millions of letter-boxes has a high null (4–7σ) purely
+from extreme-value statistics, so a single faint letter could never clear it.
+Text comes in lines, so integrating a run of eight letter-boxes along a
+baseline is the matched filter that fits the signal (`tools/linetest_1667.py`,
+swept over ±4° because flattened baselines are near but not exactly
+horizontal).
+
+**Quiet everywhere.** PHerc1667: all 7 segments, p ≥ 0.18. PHerc0139: all 32
+segments, **zero at p ≤ 0.05**, best p = 0.118. Nothing that looks like a line
+of text sits in the uncalled sheet of either scroll.
+
 ### The check that was missing
 
 That candidate exposed a flaw in the instrument, not just in itself. The

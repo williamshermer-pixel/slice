@@ -24,8 +24,11 @@ from scipy import ndimage
 from PIL import Image, ImageDraw
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, "out", "s1667")
-DS8_UM, LETTER_MM = 18.064, 1.63
+HANDS = {"PHerc1667": 1.63, "PHerc0139": 1.61, "PHerc0814": 1.28}
+SCROLL = os.environ.get("SCROLL", "PHerc1667")
+_DIRS = {"PHerc1667": "s1667"}
+OUT = os.path.join(ROOT, "out", _DIRS.get(SCROLL, f"xe_{SCROLL}"))
+DS8_UM, LETTER_MM = 18.064, HANDS[SCROLL]
 LETTER_PX = LETTER_MM * 1000.0 / DS8_UM
 
 VOID = (10, 10, 11)

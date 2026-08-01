@@ -133,89 +133,111 @@ reading the masks wrong?
 
 ---
 
-## ADDENDUM (2026-07-31 evening) — cross-energy corroboration
+## ADDENDUM (2026-07-31 evening) — a diagnostic, not a label set
 
 Append to the END of the long "how does this increase the probability of
-reading complete scrolls" answer, after the "Known limits" paragraph. Nothing
-above changes.
+reading complete scrolls" answer, after the "Known limits" paragraph.
 
-WHAT THIS IS NOT: not a new label set, and it does not answer #193's catch-22
-(labels where no segmentation exists). It needs a flattened surface volume and
-two published ink maps, so it sits inside that catch-22 rather than solving it.
-We say so below rather than let a reader assume otherwise.
+Framing note (do not paste this bit): this is aimed at the 2026 Open Problems
+page, not at #192/#193 as a labels deliverable. That page's "What's next?" asks
+"can we reduce the dependence on approximate labels, and reliably tell 'no ink'
+apart from 'no ink recovered yet'?", its bottleneck table asks for "stronger
+diagnostics", and its label-quality section asks for active learning that
+"identifies the most uncertain or valuable regions and asks humans to correct
+only those." That is what this is.
 
 ```
-ADDED THE SAME DAY — CROSS-ENERGY CORROBORATION, AND WHAT IT FOUND IN OUR OWN
-PAIRS.
+ADDED THE SAME DAY — A DIAGNOSTIC FOR "NO INK" VS "NO INK RECOVERED YET".
 
-#192 names the risk that ink labels train a model on the underlying surface
-rather than the ink. We found a way to test any ink label against evidence
-that does not come from the same scan.
+Your Open Problems page asks whether we can reliably tell "no ink" from "no ink
+recovered yet", and lists stronger diagnostics as what would help most with
+cross-scroll generalization. This is an attempt at one, plus the uncertainty
+ranking your label-quality section asks for.
 
-Three scrolls in the bucket were scanned at two photon energies and published
-with two different ink recipes months apart: PHerc1667, PHerc0139 and
-PHerc0814, at 59 keV (the 1.129um-...-L1 flattening, recipe mrg20736-1um-s1z2)
-and 78 keV (2.399um, new_canon_autoresearch_recipe). Different energy,
-reconstruction, flattening run and recipe. That lets us ask of any label: does
-a second scan corroborate this?
+THE LEVER. Three scrolls were scanned at two photon energies and published with
+two different ink recipes: PHerc1667, PHerc0139 and PHerc0814, at 59 keV (the
+1.129um-...-L1 flattening, recipe mrg20736-1um-s1z2) and 78 keV (2.399um,
+new_canon_autoresearch_recipe). For any ink label we can therefore ask: does a
+second scan corroborate this? We could not find that comparison published
+anywhere, and it is free -- both maps are already in the bucket for 62
+segments.
 
 Registration is measured, not assumed. Resizing one canvas onto the other by
 the voxel ratio, the best global fit is sx=1.000 sy=1.000 dy=0 dx=0 -- the two
-flattenings share a UV layout -- with residual warp of median 0 px, IQR 45 px
+flattenings share a UV layout -- with residual warp median 0 px, IQR 45 px
 (0.8 mm), removed by a block phase-correlation field. Registering on the sheet
-mask instead is wrong: the 78 keV flattening recovers ~1.8x more sheet and
-drags the fit to a false sy=0.87.
+mask is wrong: the 78 keV flattening recovers ~1.8x more sheet and drags the
+fit to a false sy=0.87.
 
-The two scans agree far above chance and the effect strengthens where it
-should: sweeping the call threshold, enrichment over a rolled spatial null goes
-from 4.3x at the top 20% of sheet to 69.3x at the top 1%. Threshold-free
-Spearman is 0.374; median 0.456 across 37 PHerc0139 segments. The uncomfortable
-half of the same measurement, which we think your annotation team should have:
-at a top-decile call the two published maps agree on only about 40% of each
-other's calls, and 56% allowing a full letter of slack. Within strongly inked
-text they trace the same glyphs; the divergence is in the marginal calls.
+WHAT IT SAYS. Agreement is far above chance and strengthens as the call
+tightens -- 4.3x over a rolled spatial null at the top 20% of sheet, 69.3x at
+the top 1%, threshold-free Spearman 0.374, median 0.456 across 37 PHerc0139
+segments, every segment at the null's p floor. But at a top-decile call the two
+maps agree on only ~40% of each other's calls, and 56% allowing a full letter
+of slack.
 
-WHAT IT FOUND IN OUR OWN SUBMISSION. We ran it against the 28 pairs above and
-attached the result to each label's .zattrs. 22 ink pairs, median corroboration
-1.00 -- but one (20250108000002-w027, y8576_x17280) is corroborated 0.00: the
-second scan does not see that ink at all. Of 6 negative pairs, one
-(20260126000000-w045, y12160_x12288) is only 5.5% blank in both scans, i.e. we
-shipped it as certified blank and the other scan reads it as largely inked.
-Both are flagged in place rather than quietly dropped, because which way to
-resolve them is exactly the judgement this method exists to avoid making
-silently.
+We are careful about what that disagreement means, because your own page says
+1.1 um data yields cleaner results than 2.4 um. The two maps are therefore not
+peers, and part of the divergence is that known resolution asymmetry rather
+than either being wrong. What the number does bound is how far a single
+published map can serve as ground truth for the annotator who is, per #192,
+drawing letters over model output.
 
-LIMITS. The check is sampled from the ds8 published maps (18.064 um/px), so it
-is letter-scale and carries NO depth -- it asks "is there ink at this (y,x)",
-not "at this layer". The pairs' depth claim is unaffected and still rests on
-the sliding-window profile described above. Two energies share the papyrus, so
-agreement does not separate ink from sheet CONDITION. And both recipes are
-ScrollPrize models whose shared lineage we cannot verify from the public
-bucket, so part of the agreement may be shared model bias -- accurately, this
-is cross-energy and cross-recipe, not fully independent. If you can tell us
-whether those two recipes share training data, that would sharpen it.
+APPLIED TO OUR OWN SUBMISSION, IT FOUND TWO PAIRS WE SHOULD NOT HAVE SHIPPED
+CLEAN. Run against the 28 pairs above and attached to each label's .zattrs: 22
+ink pairs, median corroboration 1.00 -- but one (20250108000002-w027,
+y8576_x17280) is corroborated 0.00, the second scan does not see that ink at
+all. Of 6 negative pairs, one (20260126000000-w045, y12160_x12288) is only 5.5%
+blank in both scans: shipped as certified blank, read by the other scan as
+largely inked. Both flagged in place, not dropped.
 
-WE ALSO SEARCHED FOR UNCALLED INK, AND FOUND NONE. Two scans average down
-independent noise, so a mark too faint for either detector alone can clear a
-joint threshold. We searched min(z59, z78) over every letter-sized box on sheet
-both scans cover and neither calls: 128 cm2 on 1667, 108.5 cm2 on 0139. No
-survivors. Four 0139 segments produced a candidate, best p=0.015, but across 37
-tests you expect ~1.9 at p<=0.05 by chance and none clears Bonferroni. The
-best-looking one reached p=0.019 after 999 nulls and then died to the render:
-it sat 0.78 mm from the sheet edge, under half a letter.
+UNCERTAINTY RANKING FOR RE-ANNOTATION. For all 62 paired segments we ship a 2D
+per-segment map at 18 um/px of where the two scans agree, disagree, or are both
+silent (out/consensus). The disagreement channel is a ranking of where a human
+annotator's attention is worth most. It is 2D and is explicitly NOT a #192
+deliverable -- #192 asks for true 3D and the pairs above are that. We built it
+as one first, realised it was the projection #192 forbids, and demoted it.
 
-That kill exposed a flaw we then fixed. Our letter-box accepted any box at
-least half on sheet, and 60.6% of the search area lay within two letters of a
-sheet boundary -- the search was dominated by the region where its own
-statistic misbehaves. Boxes must now be 95% on shared sheet and the search is
-eroded 1.5 letters from every boundary. The numbers above are post-fix; the
-earlier ones are marked contaminated in findings/CROSSENERGY_1667.md.
+AND WE SEARCHED FOR UNCALLED INK, WITH THE SENSITIVITY STATED. Two scans
+average down independent noise, so a mark too faint for either detector alone
+can clear a joint threshold. We searched min(z59, z78) over every letter-sized
+box on sheet both scans cover and neither calls, and separately with a matched
+filter for a run of eight letters along a baseline, swept over +-4 degrees.
 
-Tools: crossenergy_1667.py, conjunction_1667.py, certify_pairs_crossenergy.py,
-render_crossenergy.py, render_candidate.py. Also produced, and offered to your
-annotators as a QC overlay rather than as labels: a 2D per-segment map at
-18 um/px of where the two scans agree, disagree, or are both silent, for all 62
-paired segments (out/consensus). It is 2D and therefore explicitly NOT a #192
-deliverable -- #192 asks for true 3D and the pairs above are that. We built the
-2D version first, realised it was the projection #192 forbids, and demoted it.
+Nothing. The line test -- the better-powered of the two, since a point maximum
+over millions of boxes has a 4-7 sigma null from extreme-value statistics
+alone -- is quiet on all 7 PHerc1667 segments (p >= 0.18) and all 32 PHerc0139
+segments (zero at p <= 0.05, best 0.118). The point search produced four
+PHerc0139 candidates, best p=0.015, but across 37 tests ~1.9 are expected at
+p <= 0.05 by chance and none clears Bonferroni. The best-looking one reached
+p=0.019 after 999 nulls and died to the render: 0.78 mm from the sheet edge,
+under half a letter.
+
+THE HONEST SIZE OF THAT NEGATIVE. "215 cm2 searched" would be misleading and we
+nearly wrote it. What remains after removing called text, a 1.5 mm spillover
+keep-out and a 1.5-letter edge keep-out is not open field -- it is narrow
+ribbons between lines. Measured: of 215.2 cm2, only 52.4 cm2 has a full letter
+of clearance and only 32.6 cm2 has room for a four-letter run. On one segment
+the largest circle fitting inside the search region is 1.20 letters across. So
+the claim is "no unnoticed letter over 52.4 cm2 of effective area, no unnoticed
+word over 32.6 cm2" -- not over 215.
+
+That kill also exposed a flaw we fixed rather than worked around. Our letter-box
+accepted any box at least half on sheet, and 60.6% of the search area lay within
+two letters of a sheet boundary, so the search was dominated by the region where
+its own statistic misbehaves. Boxes must now be 95% on shared sheet and the
+search is eroded 1.5 letters from every boundary; all numbers above are
+post-fix, and the contaminated earlier ones are marked as such in
+findings/CROSSENERGY_1667.md.
+
+THE BOUND ON ALL OF IT. Both recipes are ScrollPrize models. Your page
+describes the PHerc1667 maps as the product of a six-iteration pseudo-labeling
+loop, and describes new_canon_autoresearch_recipe as trained on PHerc0139 and
+validated on PHerc1667 pseudo-labels -- so the two are plausibly entangled and
+part of the measured agreement may be shared model lineage rather than shared
+ink. Accurately: this is cross-energy and cross-recipe, not fully independent.
+Two energies also share the papyrus, so agreement does not separate ink from
+sheet CONDITION. Every certificate states both bounds. If you can say whether
+those two recipes share training data, it would sharpen the diagnostic
+considerably.
 ```
