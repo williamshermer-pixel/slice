@@ -92,7 +92,7 @@ export default function SliceViewer() {
    */
   const DEFAULT_SOURCE: Source = "sheet";
   const DEFAULT_SPECIMEN = "0139-20260302000001";
-  const [source, setSource] = useState<Source>(seed.source ?? DEFAULT_SOURCE);
+  const [source] = useState<Source>("sheet");
   const [specimenId, setSpecimenId] = useState(
     seed.specimenId ??
       (findSurface(DEFAULT_SPECIMEN)
@@ -173,12 +173,18 @@ export default function SliceViewer() {
    *  even when two segments happen to share a downsample factor. */
   const [labelVersion, setLabelVersion] = useState(0);
   const [labelSeg, setLabelSeg] = useState<string | null>(null);
+  const [labelKind, setLabelKind] =
+    useState<"cross-scan" | "published" | null>(null);
   const statsRef = useRef<FetchStats>(newStats());
 
   const catalog = useMemo(() => specimensFor(source), [source]);
   const specimen = catalog.find((s) => s.id === specimenId) ?? catalog[0];
   const level: Level | null = volume?.levels[levelIndex] ?? null;
   const base = volume?.levels[0] ?? null;
+  const volumeRef = useRef<typeof volume>(null);
+  useEffect(() => {
+    volumeRef.current = volume;
+  }, [volume]);
   const depthLabel = source === "sheet" ? "layer" : "slice z";
 
   // Open whenever the specimen changes.
@@ -268,53 +274,93 @@ export default function SliceViewer() {
 
   // Fetch the label raster for this sheet, if one exists, and recolour it once.
   useEffect(() => {
-    const seg = specimenId.startsWith("0139-")
-      ? specimenId.slice("0139-".length)
-      : null;
     labelCanvas.current = null;
     labelDsRef.current = null;
     setLabelSeg(null);
+    setLabelKind(null);
     setLabelVersion((v) => v + 1);
-    if (!seg || source !== "sheet") return;
+    if (source !== "sheet") return;
     let cancelled = false;
+
+    /**
+     * Two kinds of overlay.
+     *
+     *   cross-scan  PHerc0139 only — 37 segments with maps at two energies,
+     *               so the raster carries agree / disagree / silent.
+     *   published   Scroll 1 — the best sheet in the library (3.00 mm hand,
+     *               where letterforms actually resolve) but only ONE usable
+     *               energy, so there is nothing to cross-check. This is the
+     *               project's published detection on its own, and it is the
+     *               positive control: if our overlay does not land on the
+     *               letters that were read from this sheet in 2023, the
+     *               machinery is wrong.
+     */
+    const load = (
+      url: string,
+      ds: number,
+      seg: string,
+      kind: "cross-scan" | "published",
+    ) => {
+      const img = new Image();
+      img.onload = () => {
+        if (cancelled) return;
+        const off = document.createElement("canvas");
+        off.width = img.width;
+        off.height = img.height;
+        const oc = off.getContext("2d", { willReadFrequently: true });
+        if (!oc) return;
+        oc.drawImage(img, 0, 0);
+        const px = oc.getImageData(0, 0, img.width, img.height);
+        for (let p = 0; p < px.data.length; p += 4) {
+          const code = px.data[p];
+          const disputed = px.data[p + 1] > 127;
+          if (code === 1) {
+            px.data[p] = 233; px.data[p + 1] = 229; px.data[p + 2] = 219;
+            px.data[p + 3] = 255;
+          } else if (code === 3 || disputed) {
+            px.data[p] = 200; px.data[p + 1] = 151; px.data[p + 2] = 31;
+            px.data[p + 3] = 255;
+          } else {
+            px.data[p + 3] = 0;
+          }
+        }
+        oc.putImageData(px, 0, 0);
+        labelCanvas.current = off;
+        labelDsRef.current = ds;
+        setLabelSeg(seg);
+        setLabelKind(kind);
+        setLabelVersion((v) => v + 1);
+      };
+      img.src = url;
+    };
+
+    if (specimenId === "Paris4-20231005123336-2.4um") {
+      fetch("/qc/scroll1.json")
+        .then((r) => r.json())
+        .then((d: { downsample: number; segment: string }) => {
+          if (cancelled) return;
+          // scroll1.json stores the FULL factor (png px -> surface level 0),
+          // while the 0139 index stores the ds8 factor, so divide by 8 here to
+          // keep one convention downstream.
+          load(`/qc/scroll1-${d.segment}.png`, d.downsample / 8, d.segment,
+               "published");
+        })
+        .catch(() => undefined);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const seg = specimenId.startsWith("0139-")
+      ? specimenId.slice("0139-".length)
+      : null;
+    if (!seg) return;
     fetch("/qc/index.json")
       .then((r) => r.json())
       .then((d: { segments: { segment: string; downsample: number }[] }) => {
         const entry = d.segments.find((x) => x.segment === seg);
         if (!entry || cancelled) return;
-        const img = new Image();
-        img.onload = () => {
-          if (cancelled) return;
-          // Recolour the code channel into an RGBA canvas ONCE. The PNG holds
-          // the label code in red and a "block contained a disputed pixel"
-          // flag in green; drawing it raw would paint near-black nonsense.
-          const off = document.createElement("canvas");
-          off.width = img.width;
-          off.height = img.height;
-          const oc = off.getContext("2d", { willReadFrequently: true });
-          if (!oc) return;
-          oc.drawImage(img, 0, 0);
-          const px = oc.getImageData(0, 0, img.width, img.height);
-          for (let p = 0; p < px.data.length; p += 4) {
-            const code = px.data[p];
-            const disputed = px.data[p + 1] > 127;
-            if (code === 1) {
-              px.data[p] = 233; px.data[p + 1] = 229; px.data[p + 2] = 219;
-              px.data[p + 3] = 255;
-            } else if (code === 3 || disputed) {
-              px.data[p] = 200; px.data[p + 1] = 151; px.data[p + 2] = 31;
-              px.data[p + 3] = 255;
-            } else {
-              px.data[p + 3] = 0; // blank and unlabelled stay transparent
-            }
-          }
-          oc.putImageData(px, 0, 0);
-          labelCanvas.current = off;
-          labelDsRef.current = entry.downsample;
-          setLabelSeg(seg);
-          setLabelVersion((v) => v + 1);
-        };
-        img.src = `/qc/${seg}.png`;
+        load(`/qc/${seg}.png`, entry.downsample, seg, "cross-scan");
       })
       .catch(() => undefined);
     return () => {
@@ -375,26 +421,52 @@ export default function SliceViewer() {
     return () => clearTimeout(t);
   }, [status, source, specimenId, levelIndex, z, box, level, colormap, router]);
 
-  // Keyboard: the depth axis is the one you scrub constantly, so it gets keys.
+  /**
+   * Keyboard.
+   *
+   *   up / down     depth — the axis you scrub to find ink. Ink on these
+   *                 sheets lies in layers 27-89 of 116 (measured: reading the
+   *                 stack centre instead of that band cost AUC 0.654 vs 0.944
+   *                 against published calls), so this is the control that
+   *                 matters most.
+   *   left / right  pan across the sheet
+   *   drag          pan freely
+   *   + -           zoom, 0 fits the sheet
+   *
+   * Shift multiplies by ten on depth and pans a whole view.
+   */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
       if (el && /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) return;
       if (!base || !level) return;
-      // Step by one *resolvable* layer, which is the depth factor, not the
+
+      // Depth steps by one *resolvable* layer: the depth factor, not the
       // in-plane one — they differ on surface volumes.
-      const step = (e.shiftKey ? 10 : 1) * level.zFactor;
-      if (e.key === "ArrowUp" || e.key === "ArrowRight") {
+      const zStep = (e.shiftKey ? 10 : 1) * level.zFactor;
+      if (e.key === "ArrowUp") {
         e.preventDefault();
-        setZ((v) => clampInt(v + step, 0, base.shape[0] - 1));
-      } else if (e.key === "ArrowDown" || e.key === "ArrowLeft") {
-        e.preventDefault();
-        setZ((v) => clampInt(v - step, 0, base.shape[0] - 1));
-      } else if (e.key === "+" || e.key === "=") {
-        zoom(0.5);
-      } else if (e.key === "-") {
-        zoom(2);
+        return setZ((v) => clampInt(v + zStep, 0, base.shape[0] - 1));
       }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        return setZ((v) => clampInt(v - zStep, 0, base.shape[0] - 1));
+      }
+      if (e.key === "+" || e.key === "=") return zoom(0.5);
+      if (e.key === "-") return zoom(2);
+      if (e.key === "0") {
+        e.preventDefault();
+        return setBox({ x: 0, y: 0, width: base.shape[2], height: base.shape[1] });
+      }
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      const dir = e.key === "ArrowRight" ? 1 : -1;
+      setBox((cur) => {
+        if (!cur) return cur;
+        const frac = e.shiftKey ? 1 : 1 / 3;
+        const nx = cur.x + dir * cur.width * frac;
+        return { ...cur, x: Math.max(0, Math.min(nx, base.shape[2] - cur.width)) };
+      });
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -454,13 +526,48 @@ export default function SliceViewer() {
         if (!current || !base) return current;
         const cx = current.x + current.width / 2;
         const cy = current.y + current.height / 2;
-        const width = Math.min(base.shape[2], Math.max(32, current.width * factor));
-        const height = Math.min(base.shape[1], Math.max(32, current.height * factor));
-        return { x: cx - width / 2, y: cy - height / 2, width, height };
+        let width = Math.min(base.shape[2], Math.max(32, current.width * factor));
+        let height = Math.min(base.shape[1], Math.max(32, current.height * factor));
+        // Zooming out past what the coarsest level can serve produces a read
+        // that never returns, which reads to a user as a dead button.
+        if (factor > 1 && volumeRef.current) {
+          const ls = volumeRef.current.levels;
+          const cap = fitBudget(ls[ls.length - 1], OPEN_BUDGET_BYTES);
+          width = Math.min(width, cap.width);
+          height = Math.min(height, cap.height);
+        }
+        const nx = Math.max(0, Math.min(cx - width / 2, base.shape[2] - width));
+        const ny = Math.max(0, Math.min(cy - height / 2, base.shape[1] - height));
+        return { x: nx, y: ny, width, height };
       });
     },
     [base],
   );
+
+  /**
+   * Resolution follows the zoom.
+   *
+   * Previously the level was chosen once at open and then held, so zooming in
+   * just magnified blocky pixels from a 32x downsample and the image never got
+   * sharper — the single worst thing about using this. Pick the FINEST level
+   * whose read stays inside the budget every time the box changes.
+   *
+   * Level 0 on a small window is cheap (a chunk is [depth,128,128] and a tight
+   * crop touches few of them); level 0 on the whole sheet is not, which is what
+   * the budget is protecting against.
+   */
+  const [autoLevel, setAutoLevel] = useState(true);
+  useEffect(() => {
+    if (!autoLevel || !volume || !box) return;
+    let best = volume.levels.length - 1;
+    for (let i = 0; i < volume.levels.length; i++) {
+      if (readCost(volume.levels[i], box).bytes <= OPEN_BUDGET_BYTES) {
+        best = i;
+        break;
+      }
+    }
+    setLevelIndex((cur) => (cur === best ? cur : best));
+  }, [box, volume, autoLevel]);
 
   const drag = useRef<{ x: number; y: number; box: ViewBox } | null>(null);
   const [offset, setOffset] = useState<{ dx: number; dy: number } | null>(null);
@@ -740,28 +847,11 @@ export default function SliceViewer() {
         <section>
           {/* Source — visible buttons, never a hidden menu. */}
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <button
-              className="btn"
-              data-active={source === "scroll"}
-              onClick={() => {
-                setSource("scroll");
-                setSpecimenId(VOLUMES[0].id);
-              }}
-            >
-              Scrolls · raw
-            </button>
-            <button
-              className="btn"
-              data-active={source === "sheet"}
-              onClick={() => {
-                setSource("sheet");
-                setSpecimenId(SURFACES[0].id);
-              }}
-            >
+            <span className="font-mono text-[11px] uppercase tracking-wider text-ash">
               Sheets · flattened
-            </button>
+            </span>
             <span className="ml-auto text-[11px] text-ash">
-              {source === "sheet" ? "letters live here" : "windings, edge-on"}
+              letters live here · ↑↓ depth · ←→ pan · drag to move · +/− zoom · 0 fit
             </span>
           </div>
 
@@ -995,7 +1085,10 @@ export default function SliceViewer() {
                   min={0}
                   max={volume.levels.length - 1}
                   value={levelIndex}
-                  onChange={(e) => setLevelIndex(Number(e.target.value))}
+                  onChange={(e) => {
+                    setAutoLevel(false);
+                    setLevelIndex(Number(e.target.value));
+                  }}
                 />
               </Field>
 
@@ -1050,17 +1143,43 @@ export default function SliceViewer() {
                   </button>
                   <button
                     className="btn flex-1"
-                    onClick={() =>
-                      setBox({ x: 0, y: 0, width: base.shape[2], height: base.shape[1] })
-                    }
+                    onClick={() => {
+                      // A surface chunk is the WHOLE depth stack of a tile, so
+                      // the full sheet is a ~385 MB read even at the coarsest
+                      // level and the request simply hangs. Fit to the largest
+                      // view the coarsest level can actually serve.
+                      const coarse = volume.levels[volume.levels.length - 1];
+                      setBox(fitBudget(coarse, OPEN_BUDGET_BYTES));
+                    }}
                   >
                     Fit
                   </button>
                 </div>
               </Field>
 
-              {labelSeg && (
+              {!labelSeg && (
                 <Field label="Cross-scan labels">
+                  <p className="caption text-[11px]">
+                    No cross-scan labels for this sheet. They exist for the 37
+                    PHerc0139 segments that were scanned at two energies.
+                  </p>
+                  <button
+                    className="btn mt-2 w-full"
+                    onClick={() => setSpecimenId(DEFAULT_SPECIMEN)}
+                  >
+                    Go to a labelled sheet
+                  </button>
+                </Field>
+              )}
+
+              {labelSeg && (
+                <Field
+                  label={
+                    labelKind === "published"
+                      ? "Published ink"
+                      : "Cross-scan labels"
+                  }
+                >
                   <div className="grid grid-cols-2 gap-1.5">
                     <button
                       className="btn"
@@ -1084,9 +1203,21 @@ export default function SliceViewer() {
                     disabled={!showLabels}
                   />
                   <p className="caption mt-1 text-[11px]">
-                    <span style={{ color: "#e9e5db" }}>■</span> both scans call
-                    ink · <span style={{ color: "#c8971f" }}>■</span> only one.
-                    Blank and unlabelled are transparent.
+                    {labelKind === "published" ? (
+                      <>
+                        <span style={{ color: "#e9e5db" }}>■</span> the
+                        project&apos;s published ink detection for this sheet.
+                        Scroll 1 has one usable energy, so there is no second
+                        scan to cross-check — this is their call, not ours, and
+                        it is the positive control for the overlay.
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ color: "#e9e5db" }}>■</span> both scans
+                        call ink · <span style={{ color: "#c8971f" }}>■</span>{" "}
+                        only one. Blank and unlabelled are transparent.
+                      </>
+                    )}
                   </p>
                   <p className="caption mt-1 text-[11px] text-ash">
                     Labels are 18 µm/px against this volume&apos;s 2.258, so the
