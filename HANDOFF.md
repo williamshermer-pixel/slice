@@ -18,10 +18,24 @@ The submitted answer is preserved in `findings/SUBMIT_NOW.md`.
 
 ## ✅ THE POSITIVE CONTROL PASSED — 2026-08-01 ~04:40
 
-**Scroll 1's published ink overlay renders READABLE GREEK on the papyrus.**
-Three lines of letterforms on baselines, seg `20231005123336`, level 5, layer 54
-(inside the measured ink band 27-89). Found by William, by looking, minutes
-after the overlay went live.
+**Scroll 1's published ink overlay lands on letterform-shaped marks arranged on
+baselines.** Seg `20231005123336`, level 5, layer 54 (inside the measured ink
+band 27-89). Found by William, by looking, minutes after the overlay went live.
+
+**Stated precisely, because the first version of this note overclaimed.** It
+said "readable Greek, three lines of it". What is actually established:
+
+- the white shapes are **ScrollPrize's own published ink detection**, not ours
+  and not synthesised. The pipeline is download their ink-map JPEG → threshold
+  at the top decile → recolour → composite. Nothing in this repo draws text;
+  there is no `fillText` anywhere (checked).
+- those shapes are letterform-like and sit on baselines
+- **nobody here read them.** No transcription was attempted, no papyrologist
+  looked, and "readable" was a visual impression reported as a finding. That is
+  the same error this project spent the night correcting.
+
+What it proves is the thing a positive control needs to prove: **the overlay
+lands where their detection says ink is.** Not that we read a scroll.
 
 This settles what the previous version of this file listed as the open
 question. It means:
