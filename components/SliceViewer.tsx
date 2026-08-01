@@ -1216,11 +1216,17 @@ export default function SliceViewer() {
                   <p className="caption mt-1 text-[11px]">
                     {labelKind === "published" ? (
                       <>
-                        <span style={{ color: "#e9e5db" }}>■</span> the
-                        project&apos;s published ink detection for this sheet.
-                        Scroll 1 has one usable energy, so there is no second
-                        scan to cross-check — this is their call, not ours, and
-                        it is the positive control for the overlay.
+                        <strong className="text-ochre">
+                          NOT OUR DETECTION.
+                        </strong>{" "}
+                        <span style={{ color: "#e9e5db" }}>■</span> is
+                        ScrollPrize&apos;s own published ink map for this sheet,
+                        downloaded from their bucket and drawn on the papyrus.
+                        We did not detect this ink, did not read it, and
+                        contributed nothing to it. It is here as a{" "}
+                        <em className="font-display">positive control</em>: if
+                        their known ink lands where we draw it, our coordinates
+                        are right. That is the only claim being made.
                       </>
                     ) : (
                       <>

@@ -99,7 +99,21 @@ export default function Home() {
         </Link>
       </div>
 
-      <p className="mt-10 max-w-[74ch] border-t border-rule pt-4 text-[12px] leading-relaxed text-ash">
+      <div className="mt-10 border border-rule bg-panel p-4">
+        <p className="eyebrow mb-1">What is ours and what is not</p>
+        <p className="max-w-[74ch] text-[13px] leading-relaxed text-papyrus">
+          <strong>Ours:</strong> the label pairs, the cross-scan audit, the
+          searches, the tooling and every number on this site.{" "}
+          <strong>Not ours:</strong> the scans, and every published ink
+          detection we display. Where a sheet shows an ink overlay from
+          ScrollPrize&apos;s own map — Scroll 1 especially — that is{" "}
+          <em className="font-display">their</em> detection, shown to prove our
+          display puts it in the right place. We have not read a scroll and do
+          not claim to have found new text.
+        </p>
+      </div>
+
+      <p className="mt-6 max-w-[74ch] border-t border-rule pt-4 text-[12px] leading-relaxed text-ash">
         Two bounds travel with every number here. The two ink recipes are
         plausibly entangled through training data, so agreement may partly be
         shared model lineage rather than shared ink; and 1.1 µm data is cleaner

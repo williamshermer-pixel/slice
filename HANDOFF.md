@@ -175,8 +175,8 @@ Use it.
   reasoning kept in `app/qc/page.tsx`. **William asked for this three times and
   still does not have it.**
 - ~~Overlay alignment unverified at pixel level~~ **RESOLVED 2026-08-01**: the
-  Scroll 1 overlay renders readable Greek on the papyrus, which is a pixel-level
-  confirmation. The 18 µm/px label grid against a 2.258 µm volume still makes
+  Scroll 1 overlay lands on letterform-shaped marks on baselines, which is a
+  pixel-level confirmation of placement (not a reading — see the note above). The 18 µm/px label grid against a 2.258 µm volume still makes
   the overlay 8× coarser and blocky at high zoom — that is resolution, not
   misregistration.
 - **Discord post and issue comments not posted.** Drafted in
