@@ -148,8 +148,17 @@ export default function SliceViewer() {
    */
   const [showLabels, setShowLabels] = useState(true);
   const [labelAlpha, setLabelAlpha] = useState(0.55);
-  const labelImg = useRef<HTMLImageElement | null>(null);
-  const [labelDs, setLabelDs] = useState<number | null>(null);
+  /**
+   * The recoloured overlay is cached. Rebuilding it inside the paint effect
+   * meant recolouring up to 2M pixels on every pan, zoom, window and colormap
+   * change, which made the overlay visibly lag in and out. It depends only on
+   * the label raster, so it is built once per segment.
+   */
+  const labelCanvas = useRef<HTMLCanvasElement | null>(null);
+  const labelDsRef = useRef<number | null>(null);
+  /** Always changes when a raster is (un)loaded, so the paint effect re-runs
+   *  even when two segments happen to share a downsample factor. */
+  const [labelVersion, setLabelVersion] = useState(0);
   const [labelSeg, setLabelSeg] = useState<string | null>(null);
   const statsRef = useRef<FetchStats>(newStats());
 
@@ -244,14 +253,15 @@ export default function SliceViewer() {
     if (autoLevels && region) setWindow(autoWindow(region.data));
   }, [autoLevels, region]);
 
-  // Fetch the label raster for this sheet, if one exists.
+  // Fetch the label raster for this sheet, if one exists, and recolour it once.
   useEffect(() => {
     const seg = specimenId.startsWith("0139-")
       ? specimenId.slice("0139-".length)
       : null;
-    labelImg.current = null;
+    labelCanvas.current = null;
+    labelDsRef.current = null;
     setLabelSeg(null);
-    setLabelDs(null);
+    setLabelVersion((v) => v + 1);
     if (!seg || source !== "sheet") return;
     let cancelled = false;
     fetch("/qc/index.json")
@@ -262,9 +272,34 @@ export default function SliceViewer() {
         const img = new Image();
         img.onload = () => {
           if (cancelled) return;
-          labelImg.current = img;
-          setLabelDs(entry.downsample);
+          // Recolour the code channel into an RGBA canvas ONCE. The PNG holds
+          // the label code in red and a "block contained a disputed pixel"
+          // flag in green; drawing it raw would paint near-black nonsense.
+          const off = document.createElement("canvas");
+          off.width = img.width;
+          off.height = img.height;
+          const oc = off.getContext("2d", { willReadFrequently: true });
+          if (!oc) return;
+          oc.drawImage(img, 0, 0);
+          const px = oc.getImageData(0, 0, img.width, img.height);
+          for (let p = 0; p < px.data.length; p += 4) {
+            const code = px.data[p];
+            const disputed = px.data[p + 1] > 127;
+            if (code === 1) {
+              px.data[p] = 233; px.data[p + 1] = 229; px.data[p + 2] = 219;
+              px.data[p + 3] = 255;
+            } else if (code === 3 || disputed) {
+              px.data[p] = 200; px.data[p + 1] = 151; px.data[p + 2] = 31;
+              px.data[p + 3] = 255;
+            } else {
+              px.data[p + 3] = 0; // blank and unlabelled stay transparent
+            }
+          }
+          oc.putImageData(px, 0, 0);
+          labelCanvas.current = off;
+          labelDsRef.current = entry.downsample;
           setLabelSeg(seg);
+          setLabelVersion((v) => v + 1);
         };
         img.src = `/qc/${seg}.png`;
       })
@@ -288,45 +323,24 @@ export default function SliceViewer() {
       0,
     );
 
-    // Label overlay, drawn on top of the finished slice. The PNG carries the
-    // CODE in its red channel, so recolour into an offscreen buffer first and
-    // composite that -- drawing the raw PNG would paint near-black nonsense.
-    const img = labelImg.current;
-    if (!showLabels || !img || !labelDs || !box || !level) return;
-    const f = 8 * labelDs; // surface level-0 px per label px
+    // Label overlay, composited from the pre-recoloured canvas. Source rect is
+    // a pure scale: the ink map is written on this volume's own canvas, so
+    // there is nothing to register.
+    const lc = labelCanvas.current;
+    const ds = labelDsRef.current;
+    if (!showLabels || !lc || !ds || !box) return;
+    const f = 8 * ds; // surface level-0 px per label px
     const sx = box.x / f;
     const sy = box.y / f;
     const sw = box.width / f;
     const sh = box.height / f;
     if (sw <= 0 || sh <= 0) return;
-
-    const off = document.createElement("canvas");
-    off.width = img.width;
-    off.height = img.height;
-    const oc = off.getContext("2d", { willReadFrequently: true });
-    if (!oc) return;
-    oc.drawImage(img, 0, 0);
-    const src = oc.getImageData(0, 0, img.width, img.height);
-    for (let p = 0; p < src.data.length; p += 4) {
-      const code = src.data[p];
-      const disputed = src.data[p + 1] > 127;
-      if (code === 1) {
-        src.data[p] = 233; src.data[p + 1] = 229; src.data[p + 2] = 219;
-        src.data[p + 3] = 255;
-      } else if (code === 3 || disputed) {
-        src.data[p] = 200; src.data[p + 1] = 151; src.data[p + 2] = 31;
-        src.data[p + 3] = 255;
-      } else {
-        src.data[p + 3] = 0; // blank and unlabelled stay transparent
-      }
-    }
-    oc.putImageData(src, 0, 0);
     ctx.save();
     ctx.globalAlpha = labelAlpha;
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(off, sx, sy, sw, sh, 0, 0, region.width, region.height);
+    ctx.drawImage(lc, sx, sy, sw, sh, 0, 0, region.width, region.height);
     ctx.restore();
-  }, [region, window_, colormap, showLabels, labelAlpha, labelDs, box, level]);
+  }, [region, window_, colormap, showLabels, labelAlpha, labelVersion, box]);
 
   // Mirror the view into the URL.
   useEffect(() => {

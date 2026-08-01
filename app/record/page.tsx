@@ -392,6 +392,15 @@ export default function RecordPage() {
         eyebrow="Audit · added 2026-07-31"
         title="A second scan, and what it found in our own labels"
       >
+        <p className="text-ash">
+          A second, separate search from the one above. The calibrated hunt used
+          <em className="font-display"> our own tuned model</em> against the
+          published calls, and found the margins quiet at ~78% per-letter
+          sensitivity. This one uses no model of ours at all: it compares the
+          project&apos;s two published maps against each other. Different
+          instrument, different failure modes, same scroll — neither supersedes
+          the other.
+        </p>
         <p>
           PHerc0139 was scanned at two X-ray energies, 59 keV and 78 keV, and
           the project published an ink map from each. That allows a question no
