@@ -129,8 +129,14 @@ def warp(B, fy, fx):
     if FY.shape != (H, W):
         FY = np.pad(FY, [(0, H - FY.shape[0]), (0, W - FY.shape[1])], mode="edge")
         FX = np.pad(FX, [(0, H - FX.shape[0]), (0, W - FX.shape[1])], mode="edge")
+    # SIGN. Phase correlation of (a, b) peaks at k = -s where s is B's shift,
+    # so undoing that shift means sampling B at (y - k), not (y + k). Coded
+    # with the wrong sign this step ACTIVELY DEGRADES registration: measured on
+    # PHerc0139 20250108000000, letter-scale r was 0.605 unwarped and 0.420 with
+    # the inverted warp. Verified by tools/positive_control_xe.py, which plants
+    # a known shift and requires the warp to improve correlation.
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
-    return ndimage.map_coordinates(B, [yy + FY, xx + FX], order=1, mode="nearest")
+    return ndimage.map_coordinates(B, [yy - FY, xx - FX], order=1, mode="nearest")
 
 
 def letter_response(a, m):
@@ -139,7 +145,11 @@ def letter_response(a, m):
     a = np.where(m, a, 0.0)
     num = ndimage.uniform_filter(a, BOX)
     den = ndimage.uniform_filter(m.astype(np.float32), BOX)
-    return np.where(den > 0.5, num / np.maximum(den, 1e-6), 0.0)
+    # 0.95, not 0.5: a box half off-sheet divides a partial sum by a small
+    # denominator. The conjunction search was fixed to 0.95 but the CALL
+    # masks were left permissive, so every shipped label came from the
+    # unsafe rule.
+    return np.where(den >= 0.95, num / np.maximum(den, 1e-6), 0.0)
 
 
 def overlap(ca, cb, m):
@@ -186,11 +196,19 @@ def main():
         # spatial null: roll B's calls by >= 3 letters. Preserves histogram and
         # autocorrelation, destroys registration. Pixel permutation is invalid.
         lo = int(3 * LETTER_PX)
+        # DENSITY-PRESERVING NULL. Rolling cb alone throws most of its calls off
+        # the sheet and then intersects what is left with a stationary mask, so
+        # the null compares against ~1.8% call density instead of 10% and
+        # enrichment comes out ~6x too high (60.4x where the density-preserving
+        # value is 9.6x). Roll cb together with its own sheet mask and score on
+        # the overlap of the two sheets, so the null sees the same density.
         nulls = []
         for _ in range(NULL_N):
             sy = int(rng.integers(lo, max(lo + 1, m.shape[0] - lo)))
             sx = int(rng.integers(lo, max(lo + 1, m.shape[1] - lo)))
-            nulls.append(overlap(ca, np.roll(cb, (sy, sx), (0, 1)), m))
+            cbr = np.roll(cb, (sy, sx), (0, 1))
+            mr = np.roll(m, (sy, sx), (0, 1))
+            nulls.append(overlap(ca, cbr, m & mr))
         nulls = np.array(nulls)
         p = float((nulls >= obs).sum() + 1) / (NULL_N + 1)
         # If no rolled copy produced ANY overlap the ratio is unbounded, not
@@ -210,7 +228,25 @@ def main():
             A=A.astype(np.float16), B=Bw.astype(np.float16),
             m=m, ca=ca, cb=cb)
 
+        # Record what the registration ACTUALLY did on THIS segment. The
+        # certificates previously carried a hardcoded "best global fit sx=1.000
+        # sy=1.000 dy=0 dx=0, median 0 px, IQR ~45 px" on every array of every
+        # scroll -- numbers from an ad-hoc run that exists in no tool. Measured
+        # values only, per segment, or the field is omitted.
+        if ok.any():
+            reg = dict(blocks_trusted=int(ok.sum()), blocks_total=int(ok.size),
+                       median_dy_px=round(float(np.median(fy[ok])), 2),
+                       median_dx_px=round(float(np.median(fx[ok])), 2),
+                       iqr_dy_px=round(float(np.subtract(
+                           *np.percentile(fy[ok], [75, 25]))), 2),
+                       iqr_dx_px=round(float(np.subtract(
+                           *np.percentile(fx[ok], [75, 25]))), 2))
+        else:
+            reg = dict(blocks_trusted=0, blocks_total=int(ok.size),
+                       note="no block met the sharpness bar; no warp applied")
+
         report[seg] = dict(
+            registration_measured=reg,
             shape=[int(v) for v in A.shape],
             shared_sheet_pct=round(100 * float(m.mean()), 1),
             blocks_trusted=int(ok.sum()), letter_px=round(LETTER_PX, 1),

@@ -81,7 +81,7 @@ def main():
                 f"{cert['letter_height_px']} px", fill=ASH)
         dr.text((pad, 25),
                 f"59 keV vs 78 keV — cross-energy, cross-recipe   "
-                f"rho {a['letterscale_spearman_r']}   "
+                f"r {a.get('highpass_pearson_r', a.get('letterscale_spearman_r'))}   "
                 f"jaccard {a['jaccard']} vs null {a['jaccard_spatial_null']}   "
                 f"p {a['p_vs_rolled_null']}", fill=ASH)
         y = top + im.height + 8

@@ -408,9 +408,11 @@ tools/test_differential.py      gate calibration harness (7 checks)`}
 
       <footer className="mt-14 border-t border-rule pt-4">
         <p className="caption text-[12px]">
-          Scroll data © Vesuvius Challenge, CC BY-NC 4.0. This tool redistributes
-          none of it — every read is a direct, anonymous request to the public
-          bucket from your browser.
+          Scroll data © Vesuvius Challenge, CC BY-NC 4.0. The viewer re-hosts
+          nothing — every read is a direct, anonymous request to the public
+          bucket from your browser. The repository does ship some derived data
+          under the same licence: the #192 image/label pairs, the consensus
+          labels, and the figures on this page. See LICENSE-DATA.
         </p>
       </footer>
     </main>

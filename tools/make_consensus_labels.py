@@ -172,17 +172,21 @@ def main():
                     "reconstruction, flattening run and model recipe, published "
                     "months apart. Shared: the papyrus, and possibly "
                     "model lineage -- see LIMITATION_model_lineage."),
-                "registration": (
-                    "78 keV map resized onto the 59 keV canvas by the voxel "
-                    "ratio; measured best global fit sx=1.000 sy=1.000 dy=0 "
-                    "dx=0 (the flattenings share a UV layout), then a block "
-                    "phase-correlation field for residual warp, median 0 px, "
-                    "IQR ~45 px (0.8 mm). Registering on the sheet MASK is "
-                    "wrong -- 78 keV recovers ~1.8x more sheet and drags the "
-                    "fit to a false sy=0.87."),
+                "registration": {
+                    "method": "78 keV map resized onto the 59 keV canvas by the "
+                              "voxel ratio, then a block phase-correlation "
+                              "displacement field for residual warp. Registering "
+                              "on the sheet MASK instead is wrong -- the 78 keV "
+                              "flattening recovers more sheet and drags the fit "
+                              "off. Verified by tools/positive_control_xe.py, "
+                              "which plants a known shift and requires the warp "
+                              "to recover it and to IMPROVE correlation.",
+                    "measured_this_segment": r.get("registration_measured",
+                                                   "not recorded"),
+                },
                 "agreement": {
                     "shared_sheet_pct": r["shared_sheet_pct"],
-                    "letterscale_spearman_r": r["r_letterscale"],
+                    "highpass_pearson_r": r["r_letterscale"],
                     "jaccard": r["jaccard"],
                     "jaccard_spatial_null": r["null_mean"],
                     "enrichment_over_null": r["enrichment"],

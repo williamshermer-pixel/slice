@@ -1,313 +1,212 @@
-# Cross-energy consensus on PHerc1667 — an artifact filter that is physical
+# Cross-energy corroboration on PHerc0139 — a diagnostic, its bugs, and what survived
 
-*2026-07-31. Tools: `tools/crossenergy_1667.py`, `tools/conjunction_1667.py`,
-`tools/render_crossenergy.py`. Data: `out/s1667/crossenergy.json`,
-`conjunction.json`. Renders: `out/s1667/evidence_xe_<segment>.png`.*
+*2026-07-31, rewritten the same night after two adversarial reviews (a second
+model on the code, a third on the claims) found the first version's instrument
+defective. The bugs, the checks that now guard them, and the corrected numbers
+are all below. Nothing in this file is quoted from a run of the defective
+instrument.*
 
-## Why this scroll, and why now
+Tools: `tools/crossenergy_1667.py` (registration + agreement),
+`tools/conjunction_1667.py` (the search), `tools/certify_pairs_crossenergy.py`
+(the pair certificate), `tools/positive_control_xe.py` (the gate — plants known
+shifts and known ink, fails when the instrument is broken),
+`tools/effective_area.py`. Data: `out/xe_PHerc0139/*.json`.
 
-PHerc1667 was the best unsearched ground left in the library and the handoff
-undersold it. All seven of its segments are **curated** (`flatboi`, not
-auto-grown) — and curation is the thing that decides whether anything works
-here: fine-tune gains measured +0.094 AUC on curated segments against +0.011
-on auto-grown ones. Its hand is 1.63 mm (band-FWHM, `tools/measure_hand.py`).
-The field read it end-to-end in June 2026, so a positive control exists. And
-it had never been differential-searched.
+## The lever
 
-The fact that changes the method: **every 1667 segment was scanned twice and
-published twice.**
+PHerc0139 was scanned twice and its ink maps published twice:
 
 | | 59 keV | 78 keV |
 | --- | --- | --- |
-| surface volume | `1.129um-…-L1`, 2.258 µm/voxel, 116 layers | `2.399um-…`, 2.399 µm/voxel, 109 layers |
+| surface volume | `1.129um-…-L1`, 2.258 µm/voxel | `2.399um-…`, 2.399 µm/voxel |
 | ink map recipe | `mrg20736-1um-s1z2` | `new_canon_autoresearch_recipe` |
 | published | 2026-07-09 | 2026-04-17 |
 
-Different photon energy, different reconstruction, different flattening run,
-different model recipe, three months apart.
+37 of its 38 segments carry both maps. For any ink label on this scroll we can
+therefore ask a question no single map answers: does a second scan, through a
+different reconstruction and a different recipe, corroborate this?
 
-**How independent, exactly.** The *scans* are independent in physics — energy,
-reconstruction, flattening. The two ink *maps* are both ScrollPrize model
-output, and nothing in the public bucket says whether the two recipes share
-architecture, training data or lineage. If they do, part of the agreement
-measured below is shared MODEL bias rather than shared ink. The accurate label
-for this method is **cross-energy and cross-recipe, not fully independent** —
-the physics half of the independence is verified, the model half is not. What
-would settle it: a detector of different lineage as a third opinion, or a word
-from the maintainers. We are asking.
+## How independent, exactly — less than it looks
 
-That matters because of how this project's candidates have died. The
-2026-07-29 differential died when 23 of 24 rolled copies of *our own map*
-reproduced it. The aimed-window family died as box-filter edge geometry after
-clearing spatial nulls, independent replication *and* a physics control. Both
-survived everything because every check drew on the same input volume. **Two
-energies do not share an input volume.** Agreement between them is evidence no
-null computed over a single map can supply — bounded by the lineage caveat
-above.
+The *scans* are independent in physics: photon energy, reconstruction,
+flattening run. The *maps* are not known to be. Both recipes are ScrollPrize
+model output, and the project's own 2026 Open Problems page describes
+`new_canon_autoresearch_recipe` as found by an agent swarm **training on
+PHerc0139 data** and validated against **PHerc1667 pseudo-labels** — pseudo-
+labels produced by the other lineage. On this scroll the two maps are therefore
+plausibly entangled through training data, and part of any agreement measured
+below may be shared model lineage rather than shared ink.
 
-## Registration — measured, not assumed
+The page also states that 1.1 µm data yields cleaner ink results than 2.4 µm,
+so the two maps are not peers: part of their *disagreement* is a known
+resolution asymmetry, not error in either.
 
-The two canvases differ by exactly the voxel ratio. After resizing the 78 keV
-map onto the 59 keV canvas, the best global fit over a scale-and-shift search
-on letter-scale high-passed text is **sx=1.000, sy=1.000, dy=0, dx=0** — the
-two flattenings share a UV layout. Residual local warp is small: block phase
-correlation gives median displacement 0 px with an IQR of ~45 px (0.8 mm), and
-69% of sharp blocks sit within ±32 px. A block field takes it out.
+Accurate name for this method: **cross-energy and cross-recipe**. Not
+"independent". Both bounds are stated on every certificate it produces.
 
-Two ways to get this wrong, both hit on the way here:
+## Registration
 
-- **Registering on the sheet mask is wrong.** The 78 keV flattening recovers
-  ~1.8× more sheet area, so mask overlap drags the fit to a false sy=0.87.
-  Register on text, not on outline.
-- **Cropping each map to its own content bbox is wrong** — it destroys the very
-  alignment the shared UV layout gives you for free.
+The two canvases differ by the voxel ratio; resizing the 78 keV map onto the
+59 keV canvas by that ratio aligns them to a residual local warp that a block
+phase-correlation field measures and removes. The field is **measured and
+recorded per segment** in each certificate (`registration_measured`: trusted
+block count, median and IQR displacement). An earlier version of these
+certificates hardcoded a global "sx=1.000 sy=1.000 dy=0 dx=0, IQR ~45 px" onto
+every array — numbers from an ad-hoc exploration that no tool in this repo
+performs. That was fabricated provenance and is retracted; certificates now
+carry only what the pipeline measured on that segment.
 
-Everything below is computed on the published ds8 maps: **18.064 µm/px**, so a
-1.63 mm letter spans **~90 px**. Calls integrate over a letter-sized box, never
-per-pixel — per-pixel thresholding recovers 10–12% of known letters, letter-box
-integration 78–98%.
+The warp itself shipped with an inverted sign — phase correlation peaks at −s,
+and the code applied +s, so the "registration" step *degraded* alignment on
+every segment (measured on 20250108000000: letter-scale r 0.605 unwarped,
+0.420 as-coded). `tools/positive_control_xe.py` now plants a known shift and
+requires the warp to recover it and to *improve* correlation before any run is
+believed.
 
-## Result 1 — the two scans agree far above chance, and disagree a lot
+## Result 1 — agreement between the two maps (corrected instrument)
 
-Agreement is not an artifact of where the call threshold is put. Sweeping it on
-segment `20240304141531` (Jaccard of the two call masks against a rolled-map
-null):
+Calls are each map's top decile, integrated over a letter-sized box (≥95% on
+shared sheet — a box half off-sheet divides by a shrinking denominator and
+manufactures edge candidates). The null preserves call *density*: the rolled
+map's sheet mask rolls with it, and the Jaccard is scored on the overlap of
+the two sheets. The first version rolled calls off a stationary sheet,
+compared against ~1.8% density instead of 10%, and inflated enrichment about
+six-fold (a certificate shipped 60.4× where the density-preserving value is
+9.6×).
 
-| top % of sheet called | both | Jaccard | null | enrichment |
-| --- | --- | --- | --- | --- |
-| 20% | 9.29% | 0.303 | 0.070 | 4.3× |
-| 10% | 3.97% | 0.247 | 0.036 | 6.8× |
-| 5% | 1.65% | 0.198 | 0.016 | 12.1× |
-| 3% | 0.87% | 0.169 | 0.007 | 25.0× |
-| 1% | 0.23% | 0.131 | 0.002 | **69.3×** |
+Across all 37 paired segments:
 
-Enrichment rises monotonically as the call tightens. That is the signature of
-real shared signal: the strongest ink in each scan is exactly where two
-independent measurements converge hardest. The threshold-free check agrees —
-Spearman ρ = 0.374 on letter-box, high-passed values over shared sheet.
+- letter-scale high-passed Pearson r (it was once mislabelled a Spearman; it
+  never was one): median **0.455**, range 0.181–0.641
+- top-decile Jaccard: median **0.417** against a density-preserving rolled
+  null of **0.030** — enrichment median **14.2×**, range 5.8–62.7×, every
+  segment at p = 0.04, which is the *floor* of a 24-roll null and not a
+  measurement of how small p is
+- registration actually applied: median 16 trusted blocks per segment, median
+  |dy| 3.1 px, median IQR 8.6 px — recorded per segment, not asserted
 
-The other half of the same number is less comfortable and worth saying plainly:
-at a top-decile call the two published maps **agree on only ~40% of each
-other's calls**. Two independent detectors on the same sheet disagree about the
-majority of what each reports. Any single published map is a weaker ground
-truth than it looks.
+For scale on what the bugs cost: the same median enrichment read 25.1× before
+the density-preserving null, and the certificate on one segment read 60.4×
+where the corrected value is 9.6×.
 
-All seven 1667 segments, top-decile calls, against a 24-roll spatial null — every
-one at p = 0.040, which is the floor for 24 nulls:
+The disagreement is the half the annotation team should see: at a top-decile
+call the two maps agree on **58.9%** (median) of each other's calls on this
+scroll.
+Given the lineage entanglement above, the true ink agreement may be lower;
+given the resolution asymmetry, some disagreement is expected and benign. The
+number bounds how far one published map can serve as ground truth for an
+annotator drawing letters over it.
 
-| segment | shared | ρ | consensus | Jaccard | null | enrichment |
-| --- | --- | --- | --- | --- | --- | --- |
-| 20240304141531 | 52.5% | +0.223 | 3.97% | 0.247 | 0.031 | 7.9× |
-| 20240304144031 | 50.4% | +0.405 | 5.45% | 0.374 | 0.021 | **17.9×** |
-| 20240304161941 | 46.7% | +0.278 | 4.34% | 0.277 | 0.032 | 8.7× |
-| 20251206103305 | 51.6% | +0.153 | 4.44% | 0.286 | 0.018 | 15.5× |
-| 20251208130119 | 47.2% | +0.231 | 3.83% | 0.237 | 0.023 | 10.5× |
-| 20251212185248 | 45.0% | +0.315 | 4.37% | 0.279 | 0.019 | 14.5× |
-| 20251220020000 | 43.7% | +0.296 | 4.35% | 0.278 | 0.030 | 9.4× |
+## Result 2 — the certifier, run on our own 28 pairs
 
-**PHerc0139 agrees far more strongly** — 37 paired segments, median ρ **0.456**,
-median enrichment **25.1×**, best 89.4×, all at p = 0.040. That is the curated,
-calibrated scroll behaving as curation predicts.
+`certify_pairs_crossenergy.py` writes into each #192 pair's `.zattrs`: does
+the 59 keV source map call this label's footprint at ds8, and does the 78 keV
+scan corroborate it? The first version read **only the 78 keV map** and
+misdiagnosed both of its headline findings — an ink pair scored
+"single-scan-only" that *neither* scan calls (a label-derivation question, not
+a cross-energy one), and a "certified blank" blamed on the second scan when
+89.9% of it is called by *both*. Verdicts now name the map that disagrees, or
+refuse to assign blame when the home map never called the footprint.
 
-The disagreement is not merely stroke-level registration. Allowing a full letter
-of slack on segment 20240304144031, Jaccard goes 0.374 → 0.561: within strongly
-inked text the two scans trace the same glyphs (see the render — the Greek is
-unmistakable), but **~44% of calls still disagree at one-letter tolerance**. The
-divergence is concentrated in the marginal calls and it is real.
+Corrected results across the 28 pairs. 22 ink pairs: median corroboration by
+the 78 keV scan **1.00**, mean 0.836. 6 blank pairs: median both-scans-blank
+**1.00**. But four ink pairs and one blank pair do not hold up, and the
+verdicts now say *which* map disagrees:
 
-## The method generalises — and where it does not
+| pair | 59 keV source | 78 keV | reading |
+| --- | --- | --- | --- |
+| `20250108000002-w027 … y8576_x17280` | **0.00** | 0.00 | neither map calls this footprint — a label-derivation question, not a cross-energy one |
+| `20250108000004-w029 … y7936_x12160` | **0.11** | 0.11 | same: barely called by either |
+| `20250223000000-w059 … y11776_x8320` | **0.00** | 0.98 | the *independent* scan calls it strongly and the source map does not — the most interesting pair in the set |
+| `20250108000003-w028 … y9088_x14336` | 0.70 | **0.17** | a genuine cross-energy non-corroboration: source calls it, second scan does not |
+| `20260126000000-w045 … y12160_x12288` (blank) | — | — | **86.5% of this "certified blank" crop is called ink by BOTH maps.** Not disputed between scans; contradicted by both |
 
-Surveyed against the live bucket, 2026-07-31. A scan only counts if it samples a
-15 µm ink layer at 3+ voxels, so the 9.362 µm / 8.64 µm / 45 µm volumes are
-excluded on physics:
+Only the fourth row is a cross-energy disagreement in the sense originally
+claimed. Three are labels their own source map does not support at ds8, and
+one is a negative pair that both maps contradict. The first version of this
+tool reported one finding and attributed it to the wrong scan; the corrected
+tool reports five and attributes each correctly. All are flagged in place
+rather than dropped — which of them is a labelling error and which is a real
+detector disagreement is a judgement for the annotation team, not for us.
 
-| scroll | pair | segments |
+## Result 3 — the conjunction search, and the honest size of its negative
+
+Statistic: max over the uncalled search region of min(z₅₉, z₇₈) in letter
+boxes. Search region: shared sheet, minus called text plus a 1.5 mm spillover
+keep-out, minus 3 letters from every sheet edge (the letter-scale high-pass is
+biased positive within ~3 letters of an edge in *both* maps at the same place
+— a shared artifact the roll null cannot see; 1.5 letters left a quarter of
+the search area inside the biased band).
+
+The null is **area-matched and paired**: for each shift, both the registered
+and the de-registered maxima are computed over the *same* intersection region,
+and p is the fraction of pairs where de-registered beats registered. Two
+earlier nulls died — one dropped +5σ called-text values into the search window
+(the null *exceeded* the observation on most segments; "zero survivors" was
+unearned), one was area-mismatched and produced zero valid draws on
+ribbon-shaped regions.
+
+Result: **no survivors.** 35 of the 37 segments produced a usable paired null
+(median 99 matched draws each; two segments were skipped rather than reported
+— one could not reach the draw floor, one had too little search area). Across
+those 35, 66.5 cm² of uncalled sheet, **zero segments** reach p ≤ 0.05; the
+smallest p is 0.090 and the range runs to 0.490. No candidate to render, no
+candidate to argue about.
+
+Sensitivity, measured by the positive control rather than asserted: a single
+synthetic letter planted in both maps at the *median amplitude of real
+published calls* lands just above the paired null's 95th percentile (J = 2.72
+against 2.45 on the control segment). Single-letter detection at typical ink
+strength is therefore **marginal** — this search has real power only for
+stronger-than-typical marks or multi-letter features, and its negative must be
+read with that limit attached.
+
+Coverage, honestly sized (`effective_area.py`, which now imports the search's
+own construction from `conjunction_1667.build_search` so the sized region and
+the searched region cannot drift apart): the uncalled region is narrow ribbons
+between text lines, not open field. Raw searched area **67.1 cm²**; area where
+a letter-sized disc actually fits **28.7 cm² (42.7%)**; area with room for a
+four-letter run **10.2 cm²**. A negative over the raw figure would be
+misleading and is not claimed. The earlier "line test" (a matched filter for
+text lines) is **withdrawn entirely**: its null was the identity operation —
+translation-equivariance returned the observation to the last decimal — so it
+had zero power, and with 16 nulls its "p ≤ 0.05" flag was arithmetically
+unreachable. Its results measured nothing and are not replaced tonight.
+
+## The failure catalog — every bug, and the check that now guards it
+
+Found by adversarial review (a second model over the code, a third over the
+claims against the funder's documents), 2026-07-31 evening. Kept here because
+the project's rule is that a found bug means a missing check, and the checks
+are the durable product.
+
+| bug | consequence | guard now |
 | --- | --- | --- |
-| PHerc1667 | 59 keV + 78 keV | 7 of 7, curated |
-| PHerc0139 | 59 keV + 78 keV | **37 of 38** |
-| PHerc0814 | 59 keV + 78 keV | 19 |
-| PHerc0343P | one usable scan | — |
-| PHerc0500P2 | one usable scan | — |
-| PHercParis4 | two scans, both 78 keV | not energy-independent |
-| PHerc0172 | no ink-detection maps | the physics control |
+| warp sign inverted | registration degraded on every segment; all agreement numbers understated | positive control plants a shift, requires recovery + improved r |
+| Jaccard null lost call density | enrichment inflated ~6× | null rolls the sheet mask with the calls |
+| conjunction null rolled text into the window | null > observation; "no survivors" unearned | area-matched paired null |
+| line-test null was the identity | zero power; planted ink made it *less* significant | test withdrawn; any successor must pass planted-ink recovery |
+| line-test NULL_N=16 | "p ≤ 0.05" impossible by arithmetic | p-floor asserted against the claim threshold |
+| certifier read one map | both headline "bad pairs" misdiagnosed | verdicts computed from both maps, blame requires evidence |
+| certificates asserted an unperformed measurement | fabricated provenance, public | certificates carry only per-segment measured values |
+| letter-box accepted 50% off-sheet | edge candidates manufactured | ≥95% coverage + 3-letter edge erosion |
+| test harness greps and tautologies | 13/13 "passing" while all of the above shipped | the positive control is the gate; string-greps removed |
 
-## Result 2 — the conjunction search
+## What this is worth
 
-Two independent measurements do not only cross-check; they average down
-independent noise. A mark too faint to clear either detector's threshold alone
-can clear a joint one, because the noise is independent and the ink is not.
-This is the only route this project has found to ink that neither published map
-reports, with no GPU and no new model.
+It is a **diagnostic**, aimed at questions the funder's 2026 Open Problems
+page asks in its own words: telling "no ink" from "no ink recovered yet", and
+"stronger diagnostics" for cross-scroll generalization. It is **not** a #192
+deliverable (that issue demands true-3D labels; the 2D consensus rasters built
+here earlier were exactly the projection it forbids and are demoted to an
+annotator overlay). It does **not** touch #193's hard case (labels where no
+segmentation exists); it requires a segmentation and two published maps.
 
-Statistic: **min(z₅₉, z₇₈)** over a letter-sized box, computed only on sheet
-that both scans cover and neither calls, with a fixed 1.5 mm keep-out from any
-call (the blend kernel smears past a letter's called extent; a keep-out
-proportional to the hand would be the wrong shape). `min` rather than `sum` on
-purpose — a sum lets one scan's artifact carry a spot alone, which is the exact
-failure this design exists to prevent.
+## Status of PHerc1667 and PHerc0814
 
-Null: roll one scan's z-map by ≥3 letters. Preserves each map's histogram and
-autocorrelation, destroys their mutual registration.
-
-### What this design cannot rule out
-
-**Sheet condition.** Text sits on well-preserved papyrus, so preservation
-correlates with "text here", and both energies respond to it — a shared cause,
-not independent noise. Rolling one map destroys registration but not condition,
-so the null above does **not** separate ink from condition. Two things push
-back and neither is conclusive: the letter-scale high-pass removes smooth
-preservation gradients, and real text lies in rows at a fixed pitch while
-condition does not. The render is the arbiter. Anything surviving here is a
-**candidate, not a reading.**
-
-### Result: the search is quiet, on all three scrolls
-
-**PHerc1667 — nothing.** Zero survivors on all seven segments, ~128 cm² of sheet
-that neither published detector calls. The line filter agrees: every segment
-p ≥ 0.18.
-
-**PHerc0139 — nothing that survives.** 108.5 cm² searched across 37 segments
-after the edge correction below. Four segments produced a survivor, best
-p = 0.015. Across 37 tests you expect ~1.9 at p ≤ 0.05 by chance and we have 3;
-Poisson P(≥3) = 0.28. Nothing clears Bonferroni (0.05/37 = 0.00135). Consistent
-with noise.
-
-The one candidate that looked real is worth recording, because of how it died.
-On 20260317000000 it reached p = 0.019 after 999 nulls — and the render put it
-**0.78 mm from the sheet edge, under half a letter.** Not ink. Geometry.
-
-### The negative is smaller than its area suggests
-
-"245 cm² searched, nothing found" was nearly shipped, and it is a misleading
-sentence. What the search runs over is what remains after removing called text,
-a 1.5 mm spillover keep-out and a 1.5-letter edge keep-out. On a page of text
-that remainder is not open field — it is **narrow ribbons between the lines.**
-
-Measured (`tools/effective_area.py`), on PHerc0139: of 110.4 cm² searched, only
-**26.0 cm² (23.6%)** has a full letter of clearance, and only **15.4 cm²** has
-room for a four-letter run. On one segment the largest circle that fits inside
-the search region at all is 1.20 letters across.
-
-So most of the searched area could not have concealed a letter no matter how
-sensitive the instrument was, and counting it inflates the result. The honest
-claims are:
-
-- **no unnoticed LETTER** over the *effective* area (26.0 cm² on 0139), not the
-  raw 110.4 cm²;
-- **no unnoticed WORD** over the four-letter-run area, 15.4 cm².
-
-This is a limit of where uncalled sheet exists, not of the statistic. Finding
-ink between tightly spaced lines of already-called text was always going to be
-the hardest place to find it.
-
-### The line test — the better-powered question
-
-A point maximum over millions of letter-boxes has a high null (4–7σ) purely
-from extreme-value statistics, so a single faint letter could never clear it.
-Text comes in lines, so integrating a run of eight letter-boxes along a
-baseline is the matched filter that fits the signal (`tools/linetest_1667.py`,
-swept over ±4° because flattened baselines are near but not exactly
-horizontal).
-
-**Quiet everywhere.** PHerc1667: all 7 segments, p ≥ 0.18. PHerc0139: all 32
-segments, **zero at p ≤ 0.05**, best p = 0.118. Nothing that looks like a line
-of text sits in the uncalled sheet of either scroll.
-
-### The check that was missing
-
-That candidate exposed a flaw in the instrument, not just in itself. The
-letter-box mean accepted any box at least half on sheet (`den > 0.5`), dividing a
-partial sum by a shrinking denominator — unstable exactly at a boundary. Worse:
-**60.6% of the search area lay within two letters of a sheet edge**, so the
-search was majority-dominated by the region where its own statistic misbehaves.
-
-Fixed: a letter-box must now be ≥95% on shared sheet, and the search is eroded
-1.5 letters back from every sheet boundary — a fixed physical distance, the same
-reasoning as the spillover keep-out. Re-running 0139 under the corrected
-instrument is what produced the numbers above. Every cross-energy figure
-reported before that fix was computed on the contaminated region.
-
-## Not a #192 deliverable — a QC overlay, and a certificate
-
-**Read #192 before reading this section.** It asks for ink labels "in true 3d
-rather than a single image projected across multiple layers." The rasters below
-are **2D**, one flat image per segment at ds8 (18.064 µm/px). They are exactly
-the projection the issue forbids, and calling them a #192 deliverable would be
-shipping the mistake this project already threw away once. They were built as
-one here on 2026-07-31 and demoted before submission.
-
-What they legitimately are: **a QC overlay for annotators** — a map of where two
-scans at different energies agree, disagree, or are both silent. #192's first
-line says current ink labels are drawn by a human annotator over model output;
-a "the second scan does not corroborate this call" overlay is directly useful to
-that person.
-
-The part that does attach to #192 is `tools/certify_pairs_crossenergy.py`, which
-annotates the true-3D pairs (`[116, 512, 512]`, native resolution, ready-to-run)
-with a corroboration block in each label's `.zattrs`. It found two suspect pairs
-inside our own shipped deliverable: one ink pair corroborated 0.00 by the second
-scan, and one "certified blank" pair that the second scan reads as 94.5% inked.
-Both are flagged in place rather than dropped.
-
-Nor does any of this answer **#193's actual problem**, which is the catch-22 of
-needing labels for regions that have no segmentation. This method requires a
-flattened surface volume and two published ink maps — it lives inside that
-catch-22.
-
-### The QC overlay itself
-
-`tools/make_consensus_labels.py` → `out/consensus/<scroll>/<segment>.zarr`,
-plain zarr v2 / zlib, one uint8 raster per segment at 18.064 µm/px:
-
-| code | meaning |
-| --- | --- |
-| 1 | **consensus ink** — both scans (59 keV and 78 keV) call it |
-| 2 | **consensus blank** — neither calls it, clear of both the spillover and sheet-edge keep-outs |
-| 3 | **disputed** — exactly one scan calls it, shipped as its own code rather than silently resolved |
-| 0 | unlabelled — not covered by both scans, or inside the edge keep-out |
-
-Code 2 is the half that thresholds cannot give you: "below my cut" is not
-"blank", but "neither of two scans at different energies saw anything here, and it is far
-from anything either did see" is a measurement. Code 3 is shipped rather than
-resolved because resolving it would be exactly the arbitrary choice this method
-exists to avoid.
-
-Every array carries a certificate in `.zattrs`: both source volumes and recipes,
-the measured registration, agreement against the spatial null, the keep-outs and
-why they are what they are, and the limitation above. Labels only — no scroll
-image is redistributed; the bucket path for the image half is in the
-certificate. Verified end-to-end: reassembling all chunks reproduces the
-certificate counts exactly.
-
-## What this is worth, stated against what the issues actually ask
-
-Written after re-reading #192 and #193 in full, which should have happened
-before any of this was built.
-
-**It does not close either issue.** #192 wants true-3D ready-to-run ink labels;
-the rasters here are 2D. #193 wants label generation that escapes the
-segmentation catch-22; this method requires a segmentation. Anyone reading it
-as an answer to either has been misled, so the sections above say so plainly.
-
-**What it does contribute, honestly scoped:**
-
-1. **A corroboration test for any existing ink label** — does a scan at a
-   different photon energy, through a different reconstruction and recipe,
-   agree? Applied to our own #192 pairs it found one ink pair corroborated 0.00
-   and one "certified blank" that the second scan reads as 94.5% inked. A
-   submission that audits itself and ships the failures is worth more than one
-   that does not.
-2. **A number the annotation team does not have** — two published maps of the
-   same sheet agree on ~40% of each other's calls, 56% at one-letter tolerance.
-   That bounds how far any single map can serve as ground truth, which matters
-   directly to #192's opening complaint about annotators drawing over model
-   output.
-3. **A QC overlay** for those annotators, for all 62 paired segments.
-4. **A powered negative**: ~237 cm² of uncalled sheet searched with a method
-   that gains sensitivity from scan independence, and found nothing — with the
-   sensitivity stated rather than implied.
-
-**The bound on all four:** both recipes are ScrollPrize models whose shared
-lineage cannot be verified from the public bucket. This is cross-energy and
-cross-recipe, not fully independent, and every certificate says so.
-
+Both were measured with the defective instrument. Every number previously
+reported for them — including the whole-scroll agreement tables and the "~237
+cm² searched, nothing found" claim — is **void and withdrawn**, not corrected,
+because there was no time to rerun them before the July deadline. The corrected
+instrument reruns them in August. Nothing about them is claimed in the July
+submission beyond their existence as cross-energy pairs.

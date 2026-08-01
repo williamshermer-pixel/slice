@@ -5,8 +5,9 @@ This exists because "we searched 245 cm2 and found nothing" is a misleading
 sentence, and it was nearly shipped.
 
 The region a conjunction search looks at is what is left after removing called
-text, a 1.5 mm spillover keep-out around every call, and a 1.5-letter keep-out
-from every sheet edge. On a page of text that leftover is not open field — it
+text, a 1.5 mm spillover keep-out around every call, and a 3-letter keep-out
+from every sheet edge (the search's own construction, imported from
+conjunction_1667.build_search so the two can never drift again). On a page of text that leftover is not open field — it
 is narrow ribbons between the lines. A letter cannot fit in most of it, so most
 of that area could not have contained an unnoticed letter no matter how
 sensitive the instrument was. Counting it as "searched" inflates the negative.
@@ -14,10 +15,9 @@ sensitive the instrument was. Counting it as "searched" inflates the negative.
 Reported per segment:
 
     search_mm2       raw area the search ran over
-    hostable_mm2     area with >= 0.75 letter clearance  (a letter mostly fits)
-    effective_mm2    area with >= 1.0 letter clearance   (a letter fits)
-    line_mm2         area with >= 1.0 letter clearance AND room for a
-                     4-letter run — what a word would need
+    hostable_mm2     inscribed radius >= 0.375 letter (a letter mostly fits)
+    effective_mm2    inscribed radius >= 0.5 letter (a letter-sized disc fits)
+    line_mm2         effective AND room for a 4-letter horizontal run
     max_clearance    largest inscribed circle, in letters
 
 The honest coverage claim for a negative is effective_mm2, and the honest claim
@@ -26,9 +26,11 @@ raw area.
 
     SCROLL=PHerc0139 python3 tools/effective_area.py
 """
-import glob, json, os
+import glob, json, os, sys
 import numpy as np
 from scipy import ndimage
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HANDS = {"PHerc1667": 1.63, "PHerc0139": 1.61, "PHerc0814": 1.28}
@@ -47,15 +49,20 @@ def main():
         seg = os.path.basename(f)[3:-4]
         d = np.load(f)
         m, ca, cb = d["m"], d["ca"], d["cb"]
-        called = ndimage.uniform_filter((ca | cb).astype(np.float32),
-                                        2 * KEEPOUT_PX + 1) > 1e-6
-        edge = ndimage.distance_transform_edt(m)
-        search = m & ~called & (edge >= 1.5 * LETTER_PX)
+        # identical construction to the search that actually runs -- sizing
+        # any other region is sizing a fiction
+        import conjunction_1667 as _cj
+        search = _cj.build_search(m, ca, cb)
         if search.sum() == 0:
             continue
         clear = ndimage.distance_transform_edt(search)
-        host = clear >= 0.75 * LETTER_PX
-        eff = clear >= LETTER_PX
+        # clearance is an inscribed RADIUS: a letter-sized disc (diameter one
+        # letter) fits where clear >= LETTER_PX/2. The first version demanded
+        # clear >= LETTER_PX -- a TWO-letter-wide disc -- then described it as
+        # "a letter fits", understating effective area ~4x. Conservative in a
+        # safe direction, but wrong words on a number are wrong words.
+        host = clear >= 0.375 * LETTER_PX
+        eff = clear >= 0.5 * LETTER_PX
         # room for a 4-letter run: a horizontal box 4 letters x 1 letter that
         # stays inside the search region
         run = ndimage.uniform_filter(

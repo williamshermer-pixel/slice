@@ -45,7 +45,7 @@ LETTER_MM = HANDS[SCROLL]
 LETTER_PX = LETTER_MM * 1000.0 / DS8_UM
 RUN_LETTERS = 8                       # a short word / line fragment
 ANGLES = (-4.0, -2.0, 0.0, 2.0, 4.0)  # degrees off horizontal
-NULL_N = 16
+NULL_N = int(os.environ.get('NULL_N', 199))
 
 
 def line_kernel(angle):
@@ -89,26 +89,35 @@ def main():
         if only and only not in seg:
             continue
         d = np.load(f)
-        J = d["J"].astype(np.float32)
+        if "za" not in d:
+            print(f"{seg}  no za/zb in cj file — rerun conjunction first")
+            continue
+        za = d["za"].astype(np.float32)
+        zb = d["zb"].astype(np.float32)
         search = d["search"]
         if search.sum() < 50000:
             continue
 
-        obs, ang, rmap = line_score(J, search)
+        obs, ang, rmap = line_score(np.minimum(za, zb), search)
 
-        # Null: roll J and its search mask TOGETHER. Rolling J alone is wrong —
-        # it slides the high values that sit on called text into the stationary
-        # search window and inflates the null (measured on 1667: null 3.80
-        # against an observed 1.16). Rolling the pair relocates the search
-        # region intact, so the null sees the same J-within-search distribution
-        # and the same area, only somewhere else on the sheet.
+        # THE NULL THAT WAS THE IDENTITY OPERATION. Rolling J and search
+        # TOGETHER is exactly translation-equivariant for this score, so the
+        # null returned the observation to the last decimal (measured: obs
+        # 0.1008761, nulls 0.100876) and the test had ZERO power -- planting
+        # real ink made it LESS significant. Roll only zb, as the conjunction
+        # does, and rebuild the statistic; za stays put so the two maps are
+        # genuinely de-registered.
         lo = int(3 * LETTER_PX)
         nulls = []
         for _ in range(NULL_N):
-            sy = int(rng.integers(lo, max(lo + 1, J.shape[0] - lo)))
-            sx = int(rng.integers(lo, max(lo + 1, J.shape[1] - lo)))
-            v, _, _ = line_score(np.roll(J, (sy, sx), (0, 1)),
-                                 np.roll(search, (sy, sx), (0, 1)))
+            sy = int(rng.integers(lo, max(lo + 1, za.shape[0] - lo)))
+            sx = int(rng.integers(lo, max(lo + 1, za.shape[1] - lo)))
+            zbr = np.roll(zb, (sy, sx), (0, 1))
+            sr = np.roll(search, (sy, sx), (0, 1))
+            reg = search & sr
+            if reg.sum() < 1000:
+                continue
+            v, _, _ = line_score(np.minimum(za, zbr), reg)
             nulls.append(v)
         nulls = np.array([v for v in nulls if np.isfinite(v)])
         if nulls.size == 0:

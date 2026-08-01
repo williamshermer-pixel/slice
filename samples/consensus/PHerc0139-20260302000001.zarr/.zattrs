@@ -9,16 +9,16 @@
   "3": "disputed - exactly one scan calls it"
  },
  "counts_px": {
-  "unlabelled": 4881565,
-  "ink": 96279,
-  "blank": 248964,
-  "disputed": 288632
+  "unlabelled": 4915398,
+  "ink": 89927,
+  "blank": 217238,
+  "disputed": 292877
  },
  "counts_pct_of_canvas": {
-  "unlabelled": 88.507,
-  "ink": 1.746,
-  "blank": 4.514,
-  "disputed": 5.233
+  "unlabelled": 89.121,
+  "ink": 1.63,
+  "blank": 3.939,
+  "disputed": 5.31
  },
  "resolution_um_per_px": 18.064,
  "grid": "published ink-map canvas, downsampled 8x (ds8)",
@@ -30,13 +30,23 @@
  },
  "source_bucket_prefix": "https://vesuvius-challenge-open-data.s3.us-east-1.amazonaws.com/PHerc0139/segments/",
  "independence": "59 keV (1.129um-...-L1 flattening, 2.258 um/voxel) and 78 keV (2.399um, 2.399 um/voxel): different photon energy, reconstruction, flattening run and model recipe, published months apart. Shared: the papyrus, and possibly model lineage -- see LIMITATION_model_lineage.",
- "registration": "78 keV map resized onto the 59 keV canvas by the voxel ratio; measured best global fit sx=1.000 sy=1.000 dy=0 dx=0 (the flattenings share a UV layout), then a block phase-correlation field for residual warp, median 0 px, IQR ~45 px (0.8 mm). Registering on the sheet MASK is wrong -- 78 keV recovers ~1.8x more sheet and drags the fit to a false sy=0.87.",
+ "registration": {
+  "method": "78 keV map resized onto the 59 keV canvas by the voxel ratio, then a block phase-correlation displacement field for residual warp. Registering on the sheet MASK instead is wrong -- the 78 keV flattening recovers more sheet and drags the fit off. Verified by tools/positive_control_xe.py, which plants a known shift and requires the warp to recover it and to IMPROVE correlation.",
+  "measured_this_segment": {
+   "blocks_trusted": 6,
+   "blocks_total": 15,
+   "median_dy_px": -2.59,
+   "median_dx_px": -15.79,
+   "iqr_dy_px": 7.27,
+   "iqr_dx_px": 25.26
+  }
+ },
  "agreement": {
-  "shared_sheet_pct": 43.6,
-  "letterscale_spearman_r": 0.263,
-  "jaccard": 0.2501,
-  "jaccard_spatial_null": 0.0239,
-  "enrichment_over_null": 10.47,
+  "shared_sheet_pct": 42.9,
+  "highpass_pearson_r": 0.229,
+  "jaccard": 0.2349,
+  "jaccard_spatial_null": 0.0402,
+  "enrichment_over_null": 5.84,
   "p_vs_rolled_null": 0.04,
   "call_threshold": "each scan's own top decile, letter-box integrated (per-pixel thresholding recovers only 10-12% of known letters)"
  },

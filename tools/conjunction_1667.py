@@ -71,7 +71,7 @@ def letter_box(a, m):
     return np.where(den >= MIN_BOX_COVER, num / np.maximum(den, 1e-6), 0.0)
 
 
-def interior(m, letters=1.5):
+def interior(m, letters=3.0):
     """Shared sheet eroded away from its own boundary, so no scored pixel has
     a letter-box hanging off the edge. A FIXED physical distance, like the
     spillover keep-out — the edge instability is a property of the box, not of
@@ -106,6 +106,48 @@ def peaks(J, search, k, min_sep):
     return out
 
 
+def build_search(m, ca, cb):
+    """THE search region, defined once. effective_area.py sizes the search the
+    conjunction runs over; when the two constructions drifted (a missing
+    dilation, a 1.5- vs 3-letter erosion) the 'honest coverage' figure was
+    sizing a region nobody searched."""
+    called = ndimage.binary_dilation(ca | cb, iterations=1,
+                                     structure=np.ones((3, 3)))
+    called = ndimage.uniform_filter(called.astype(np.float32),
+                                    2 * KEEPOUT_PX + 1) > 1e-6
+    return m & ~called & interior(m)
+
+
+def null_statistic(za, zb, search, shift, letter_px):
+    """One AREA-MATCHED draw of the spatial null.
+
+    Two designs died before this one. (1) Rolling zb against a stationary
+    search window dropped +5-sigma called-text values into the region -- the
+    null mean EXCEEDED the observation on most segments and the test could not
+    reject. (2) Rolling zb and search together, scored on the intersection,
+    compared a max over the FULL region against a max over a small overlap --
+    area-mismatched extreme values -- and on ribbon-shaped search regions the
+    15% overlap floor produced ZERO valid draws (caught by a smoke test).
+
+    This design: for a shift s, the valid pairing region is R_s = R & roll(R,s)
+    -- pixels where za is in-region AND the relocated zb is in-region. Compute
+    BOTH maxima over R_s:  obs_s = max min(za, zb),  null_s = max min(za,
+    roll(zb)).  Same area, same boxes, same extreme-value regime; the only
+    difference is registration. Returns (obs_s, null_s), or None if R_s is too
+    small to hold a letter-scale maximum worth comparing.
+    """
+    sr = np.roll(search, shift, (0, 1))
+    reg = search & sr
+    if reg.sum() < 5000:
+        return None
+    zbr = np.roll(zb, shift, (0, 1))
+    po = peaks(np.minimum(za, zb), reg, 1, int(2 * letter_px))
+    pn = peaks(np.minimum(za, zbr), reg, 1, int(2 * letter_px))
+    if not po or not pn:
+        return None
+    return (po[0][0], pn[0][0])
+
+
 def main():
     only = sys.argv[1] if len(sys.argv) > 1 else None
     rng = np.random.default_rng(7)
@@ -119,12 +161,7 @@ def main():
         A, B = d["A"].astype(np.float32), d["B"].astype(np.float32)
         m, ca, cb = d["m"], d["ca"], d["cb"]
 
-        called = ndimage.binary_dilation(ca | cb,
-                                         iterations=1,
-                                         structure=np.ones((3, 3)))
-        called = ndimage.uniform_filter(called.astype(np.float32),
-                                        2 * KEEPOUT_PX + 1) > 1e-6
-        search = m & ~called & interior(m)
+        search = build_search(m, ca, cb)
         frac = float(search.sum() / max(1, m.sum()))
         if search.sum() < 50000:
             print(f"{seg}  search area too small ({search.sum()} px), skipped")
@@ -142,29 +179,45 @@ def main():
         # Spatial null: roll ONE scan's z-map. Preserves each map's histogram
         # and autocorrelation, destroys their mutual registration.
         lo = int(3 * LETTER_PX)
-        null_top = []
-        for _ in range(NULL_N):
-            sy = int(rng.integers(lo, max(lo + 1, m.shape[0] - lo)))
-            sx = int(rng.integers(lo, max(lo + 1, m.shape[1] - lo)))
-            Jn = np.minimum(za, np.roll(zb, (sy, sx), (0, 1)))
-            pk = peaks(Jn, search, 1, int(2 * LETTER_PX))
-            null_top.append(pk[0][0] if pk else -np.inf)
-        null_top = np.array(null_top, dtype=np.float64)
-        p = float((null_top >= obs_top).sum() + 1) / (NULL_N + 1)
+        # Paired draws: bounded shifts (de-registered but with usable
+        # self-overlap), retry with a ceiling -- every retry loop here has one.
+        hi_y = max(lo + 1, int(0.35 * m.shape[0]))
+        hi_x = max(lo + 1, int(0.35 * m.shape[1]))
+        pairs_, tries = [], 0
+        while len(pairs_) < NULL_N and tries < NULL_N * 12:
+            tries += 1
+            sy = int(rng.integers(lo, hi_y)) * (1 if rng.random() < 0.5 else -1)
+            sx = int(rng.integers(lo, hi_x)) * (1 if rng.random() < 0.5 else -1)
+            v = null_statistic(za, zb, search, (sy, sx), LETTER_PX)
+            if v is not None:
+                pairs_.append(v)
+        if len(pairs_) < max(8, NULL_N // 2):
+            print(f"{seg}  null degenerate ({len(pairs_)} draws), skipped")
+            continue
+        obs_s = np.array([a for a, b in pairs_])
+        null_top = np.array([b for a, b in pairs_])
+        # Paired sign test: how often does the de-registered max beat the
+        # registered max over the SAME area?
+        p = float((null_top >= obs_s).sum() + 1) / (len(pairs_) + 1)
 
-        surv = [dict(z=round(s, 2), y=y, x=x,
-                     mm_y=round(y * DS8_UM / 1000, 1),
-                     mm_x=round(x * DS8_UM / 1000, 1))
-                for s, y, x in obs if s > np.percentile(null_top, 95)]
+        surv = []
+        if p <= 0.05:
+            surv = [dict(z=round(s, 2), y=y, x=x,
+                         mm_y=round(y * DS8_UM / 1000, 1),
+                         mm_x=round(x * DS8_UM / 1000, 1))
+                    for s, y, x in obs[:3]]
 
         np.savez_compressed(os.path.join(OUT, f"cj_{seg}.npz"),
-                            J=J.astype(np.float16), search=search)
+                            J=J.astype(np.float16), search=search,
+                            za=za.astype(np.float16), zb=zb.astype(np.float16))
         report[seg] = dict(
             search_frac_of_shared=round(frac, 3),
             search_mm2=round(float(search.sum()) * (DS8_UM / 1000) ** 2, 1),
-            keepout_mm=KEEPOUT_MM, edge_keepout_letters=1.5,
+            keepout_mm=KEEPOUT_MM, edge_keepout_letters=3.0,
             min_box_cover=MIN_BOX_COVER, letter_px=round(LETTER_PX, 1),
             obs_top_z=round(obs_top, 2),
+            paired_draws=len(pairs_),
+            paired_obs_mean=round(float(obs_s.mean()), 2),
             null_top_mean=round(float(null_top.mean()), 2),
             null_top_p95=round(float(np.percentile(null_top, 95)), 2),
             p=round(p, 4), n_survivors=len(surv), survivors=surv)

@@ -68,7 +68,8 @@ def main():
     f = sorted(glob.glob(os.path.join(d, "xe_*.npz")))[0]
     z = np.load(f)
     A, B, m = z["A"].astype(np.float32), z["B"].astype(np.float32), z["m"]
-    LET = 1.61 * 1000 / DS8_UM
+    _xe = json.load(open(os.path.join(d, "crossenergy.json")))
+    LET = _xe["letter_mm"] * 1000 / DS8_UM
     hp = lambda x: x - ndimage.gaussian_filter(np.where(m, x, 0.0), LET)
     Ah, Bh = hp(A), hp(B)
     r0 = float(np.corrcoef(Ah[m], Bh[m])[0, 1])
@@ -81,10 +82,8 @@ def main():
     check("1 registration is identity (no shift beats zero shift)",
           best[1] == (0, 0), f"best offset {best[1]}, r {best[0]:.4f} vs {r0:.4f}")
 
-    mask_r = float(np.corrcoef(m.ravel().astype(np.float32),
-                               (z["cb"] | z["ca"]).ravel().astype(np.float32))[0, 1])
-    check("2 text fit beats sheet-outline fit", r0 > mask_r,
-          f"text r {r0:.3f} vs outline r {mask_r:.3f}")
+    # (a former check 2 correlated the sheet mask with the call masks and
+    # called it a registration test; it tested nothing and is removed)
 
     # ---- 3: agreement vs null, monotone in threshold --------------------
     print("\nagreement")
@@ -115,9 +114,13 @@ def main():
     check("4 no scored pixel within 1.5 letters of a sheet edge", not viol,
           f"{len(viol)} violations" + (f" worst {viol[0][1]:.2f}L" if viol else ""))
 
-    src = open(os.path.join(ROOT, "tools", "conjunction_1667.py")).read()
-    check("5 letter-box requires >=95% sheet coverage",
-          "MIN_BOX_COVER = 0.95" in src and "den >= MIN_BOX_COVER" in src)
+    sys.path.insert(0, os.path.join(ROOT, "tools"))
+    import conjunction_1667 as _cj
+    half = np.zeros((200, 200), bool); half[:, :100] = True
+    lb = _cj.letter_box(np.ones((200, 200), np.float32), half)
+    check("5 letter-box returns 0 where the box hangs off the sheet (behavioral)",
+          lb[100, 99] == 0.0 and lb[100, 30] > 0.0,
+          f"edge value {lb[100,99]}, interior {lb[100,30]:.2f}")
 
     # ---- 6 & 7: shipped arrays -----------------------------------------
     print("\nshipped label arrays")
@@ -184,18 +187,43 @@ def main():
     pc = os.path.join(ROOT, "out", "pairs", "CROSSENERGY_CERTIFICATE.json")
     if os.path.exists(pc):
         pr = json.load(open(pc))["pairs"]
-        vals = [o.get("corroborated_frac", o.get("both_scans_blank_frac"))
-                for o in pr]
+        vals = [o.get("corroborated_by_78kev_frac",
+                      o.get("both_scans_blank_frac")) for o in pr]
         vals = [v for v in vals if v is not None]
         rng_ok = all(0.0 <= v <= 1.0 for v in vals)
+        def _low(o, k):
+            v = o.get(k)
+            return v is not None and v < 0.1   # `or 1` once hid an exact 0.0
         flagged = [o["pair"] for o in pr
-                   if o.get("corroborated_frac") == 0.0
-                   or (o.get("both_scans_blank_frac") or 1) < 0.1]
+                   if _low(o, "corroborated_by_78kev_frac")
+                   or _low(o, "called_by_source_59kev_frac")
+                   or _low(o, "both_scans_blank_frac")]
         check("10a corroboration fractions in [0,1]", rng_ok, f"n={len(vals)}")
-        check("10b the two known-bad pairs are still flagged", len(flagged) >= 2,
+        check("10b the known-bad pairs are still flagged", len(flagged) >= 2,
               f"{len(flagged)} flagged")
     else:
         check("10 pair certificate exists", False)
+
+    # ---- ship gates ----------------------------------------------------
+    print("\nship gates")
+    import re as _re
+    sent = 0
+    for doc in ("findings/CROSSENERGY_1667.md", "findings/SUBMIT_NOW.md",
+                "README.md"):
+        p = os.path.join(ROOT, doc)
+        if os.path.exists(p):
+            sent += len(_re.findall("\u27e6XE\u27e7", open(p).read()))
+    check("11 no unfilled number sentinels in shipped docs", sent == 0,
+          f"{sent} remaining")
+
+    pc = os.path.join(ROOT, "out", "pc.log")
+    tools = glob.glob(os.path.join(ROOT, "tools", "*.py"))
+    fresh = (os.path.exists(pc)
+             and "positive control passed" in open(pc).read()
+             and all(os.path.getmtime(pc) > os.path.getmtime(t)
+                     for t in tools if "test_crossenergy" not in t))
+    check("12 positive control PASSED and is newer than every tool",
+          fresh, "out/pc.log")
 
     print(f"\n{'='*62}\n{len(PASS)} passed, {len(FAIL)} failed")
     if FAIL:

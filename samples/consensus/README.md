@@ -1,7 +1,7 @@
 # Sample: cross-energy consensus labels
 
 One segment of PHerc0139, committed so a reviewer can open a working array
-without running anything. The other 61 paired segments regenerate with:
+without running anything. The other PHerc0139 segments regenerate with (PHerc1667/0814 runs are withdrawn pending the corrected-instrument rerun; see findings/CROSSENERGY_1667.md):
 
 ```bash
 python3 tools/fetch_pub_maps.py PHerc0139     # ds8 published maps, both energies
@@ -14,7 +14,7 @@ Plain zarr v2, zlib, uint8, `dimension_separator: "."`. Codes:
 | code | meaning |
 | --- | --- |
 | 0 | unlabelled — not covered by both scans, or inside the sheet-edge keep-out |
-| 1 | **consensus ink** — both independent scans call it |
+| 1 | **consensus ink** — both scans (59 keV and 78 keV) call it |
 | 2 | **consensus blank** — neither calls it, clear of the spillover and edge keep-outs |
 | 3 | disputed — exactly one scan calls it |
 

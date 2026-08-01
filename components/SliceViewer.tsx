@@ -1096,8 +1096,8 @@ export default function SliceViewer() {
           dataset (Parsons et al., 2023), © EduceLab / University of Kentucky.
         </p>
         <p className="mt-1.5 font-mono text-[10px] uppercase tracking-wider text-ash">
-          Data CC BY-NC 4.0 · code MIT · nothing is re-hosted — your browser reads the
-          public bucket directly
+          Data CC BY-NC 4.0 · code MIT · this viewer re-hosts nothing — your browser
+          reads the public bucket directly
         </p>
       </footer>
     </div>

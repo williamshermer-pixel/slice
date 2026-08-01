@@ -102,6 +102,12 @@ def main():
             foot = (lab == 1).any(axis=0)
             H, W = foot.shape
 
+            if y0 % DS8 or x0 % DS8:
+                out.append(dict(pair=os.path.basename(pdir), seg=seg,
+                                status=f"crop origin not ds8-aligned "
+                                       f"({y0 % DS8},{x0 % DS8}) -- skipped "
+                                       f"rather than silently misaligned"))
+                continue
             ys, xs = y0 // DS8, x0 // DS8
             yh, xw = -(-H // DS8), -(-W // DS8)
             if ys + yh > ca.shape[0] or xs + xw > ca.shape[1]:
@@ -127,7 +133,9 @@ def main():
                 "segment_agreement": {
                     "jaccard": r["jaccard"], "null": r["null_mean"],
                     "enrichment": r["enrichment"], "p": r["p"],
-                    "letterscale_spearman_r": r["r_letterscale"]},
+                    # Pearson on letter-scale high-passed pixels. It was once
+                    # labelled "spearman" here; it never was one.
+                    "highpass_pearson_r": r["r_letterscale"]},
                 "BOUNDS": (
                     "Sampled from the ds8 published maps (18.064 um/px) in "
                     "canvas coordinates: a LETTER-SCALE check, not voxel-scale, "
@@ -138,30 +146,60 @@ def main():
                     "agreement bounds confidence from above, not below."),
             }
 
+            # BOTH maps, always. The first version of this tool read only the
+            # 78 keV map and misdiagnosed both of its headline findings: an ink
+            # pair scored "single-scan-only" that NEITHER scan calls (a label/
+            # derivation question, nothing to do with cross-energy), and a
+            # blank pair blamed on "the second scan" when 89.9% of it is called
+            # by BOTH scans. A verdict that cannot see the home map cannot say
+            # who disagrees with whom.
             if kind == "ink":
                 n = int(F.sum())
                 if n == 0:
                     blk.update(verdict="no ink footprint in this crop")
                 else:
-                    corr = float((F & B).sum() / n)
+                    home = float((F & A).sum() / n)     # 59 keV, the source
+                    other = float((F & B).sum() / n)    # 78 keV, independent
                     blk.update(
                         footprint_px_ds8=n,
-                        corroborated_frac=round(corr, 3),
-                        single_scan_frac=round(float((F & ~B).sum() / n), 3),
-                        verdict=("corroborated" if corr >= 0.5 else
-                                 "mixed" if corr >= 0.2 else "single-scan-only"))
+                        called_by_source_59kev_frac=round(home, 3),
+                        corroborated_by_78kev_frac=round(other, 3))
+                    if home < 0.2:
+                        blk.update(verdict=(
+                            "not called by its own source map at ds8 -- a "
+                            "label-derivation question, not a cross-energy "
+                            "one; the second scan cannot corroborate or "
+                            "dispute what the first never called"))
+                    else:
+                        blk.update(verdict=(
+                            "corroborated" if other >= 0.5 else
+                            "mixed" if other >= 0.2 else
+                            "not corroborated by the 78 keV scan"))
             else:
                 inside = S & ~F
                 n = int(inside.sum())
                 if n == 0:
                     blk.update(verdict="no shared sheet in this crop")
                 else:
+                    both = float((inside & A & B).sum() / n)
+                    only_a = float((inside & A & ~B).sum() / n)
+                    only_b = float((inside & B & ~A).sum() / n)
                     quiet = float((inside & ~A & ~B).sum() / n)
                     blk.update(
                         sheet_px_ds8=n,
                         both_scans_blank_frac=round(quiet, 3),
-                        verdict=("both scans agree blank" if quiet >= 0.9 else
-                                 "partially disputed"))
+                        called_by_both_frac=round(both, 3),
+                        called_59kev_only_frac=round(only_a, 3),
+                        called_78kev_only_frac=round(only_b, 3))
+                    if quiet >= 0.9:
+                        blk.update(verdict="both scans agree blank")
+                    elif both >= 0.5:
+                        blk.update(verdict=(
+                            "BOTH scans call ink over most of this crop -- "
+                            "the blank label is contradicted by both maps, "
+                            "not disputed between them"))
+                    else:
+                        blk.update(verdict="partially disputed")
 
             lp = os.path.join(pdir, "label", ".zattrs")
             att = json.load(open(lp)) if os.path.exists(lp) else {}
@@ -170,21 +208,25 @@ def main():
                 json.dump(att, open(lp, "w"), indent=1)
             out.append(dict(pair=os.path.basename(pdir), seg=seg, kind=kind,
                             **{k: v for k, v in blk.items()
-                               if k in ("verdict", "corroborated_frac",
-                                        "both_scans_blank_frac")}))
+                               if k in ("verdict",
+                                        "called_by_source_59kev_frac",
+                                        "corroborated_by_78kev_frac",
+                                        "both_scans_blank_frac",
+                                        "called_by_both_frac")}))
             print(f"{kind:5s} {os.path.basename(pdir)[:52]:54s} "
-                  f"{blk.get('corroborated_frac', blk.get('both_scans_blank_frac','-'))}"
-                  f"  {blk['verdict']}")
+                  f"{blk.get('corroborated_by_78kev_frac', blk.get('both_scans_blank_frac','-'))}"
+                  f"  {blk['verdict'][:60]}")
 
     p = os.path.join(PAIRS, "CROSSENERGY_CERTIFICATE.json")
     if not DRY:
         json.dump(dict(note="cross-energy corroboration attached to the true-3D "
                             "#192 pairs; this is a certificate, not a label set",
                        pairs=out), open(p, "w"), indent=1)
-    ink = [o for o in out if o.get("kind") == "ink" and "corroborated_frac" in o]
+    ink = [o for o in out if o.get("kind") == "ink"
+           and "corroborated_by_78kev_frac" in o]
     bl = [o for o in out if o.get("kind") == "blank" and "both_scans_blank_frac" in o]
     if ink:
-        v = [o["corroborated_frac"] for o in ink]
+        v = [o["corroborated_by_78kev_frac"] for o in ink]
         print(f"\nink pairs   n={len(ink)}  corroborated frac "
               f"min {min(v):.2f} median {sorted(v)[len(v)//2]:.2f} max {max(v):.2f}")
     if bl:

@@ -61,7 +61,9 @@ has to be *recovered*. Two independent signals, intersected:
 
 Where a pixel's profile is flat, the label says **ambiguous** rather than
 inventing a depth. `tools/verify_pairs.py` then *measures* that depth varies
-across every shipped crop (mean sd 4 layers over ~9 distinct depth centres) —
+across every shipped ink crop (manifest: mean depth sd 7.3 layers, mean 13.2
+distinct depth levels per crop; blank crops carry no ink so the gate does not
+apply to them) —
 a projected label cannot pass that gate, and v1 of this deliverable did not.
 
 ### The quality certificate
@@ -74,7 +76,14 @@ teach a model the surface rather than the ink; the measured ink depth band;
 the model and full recipe; and provenance back to the source volume.
 
 Pairs come in two kinds: **ink-rich** (positives) and **negative-rich**
-(certified absence, ~26% of volume). Both are needed to train.
+(certified absence — per-pair blank fractions run 2.3%–33.4%, mean 12.4%,
+each pair's own number is in the manifest). Both are needed to train.
+
+A recall disclosure that belongs next to the word "certified": the ink floor
+that certifies blankness recovers 14.2% of known ink at its 0.2%
+false-positive operating point. High precision, low recall — "the detector
+saw nothing here" is not "there is nothing here", and training should treat
+code 2 accordingly.
 
 Which segments would be most useful labelled next? Open an issue — profiling
 costs roughly one GPU-minute per window.

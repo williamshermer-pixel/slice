@@ -23,9 +23,12 @@ Adds Slice to Community Projects under Ink Detection.
 Ready-to-run image/label pairs for ink-detection training, addressing #192
 (depth resolved per pixel rather than projected across layers) and #193 (the
 generation method). Each pair ships a measured quality certificate — an ink
-floor calibrated to a 0.2% false-positive rate on known-blank papyrus, and a
-condition-control AUC separating ink from blank sheet of the same
-preservation. A QC gate verifies the depth claim rather than asserting it.
+floor calibrated to a 0.2% false-positive rate on known-blank papyrus (at
+that operating point it recovers 14.2% of known ink -- a high-precision,
+low-recall label set, stated so nobody mistakes silence for absence), and a
+scroll-level condition-control AUC separating ink from blank sheet of the
+same preservation. A QC gate verifies the depth claim on ink pairs rather
+than asserting it.
 
 Repo: https://github.com/williamshermer-pixel/slice
 Viewer: https://slice-site-alpha.vercel.app
@@ -71,11 +74,15 @@ every pixel a response profile whose peak is its depth, then narrow it using
 the crop's own intensity profile (which cannot see ink, but locates the sheet
 ink must lie on). Where a profile is flat we label ambiguous rather than
 inventing a layer. A QC gate measures that depth actually varies across every
-shipped crop and removes pairs that fail — a projected label cannot pass it,
-and our own first version was exactly such a projection and was discarded.
+shipped INK crop and removes pairs that fail — a projected label cannot pass
+it, and our own first version was exactly such a projection and was discarded.
+(Blank pairs carry no ink and therefore no depth to vary; the gate does not
+apply to them.)
 
 2. THE SURFACE-CONFOUND CONTROL (#192's stated fear, measured). Every pair
-carries a condition-control AUC: ink separated from blank sheet INSIDE the
+carries the scroll-level condition-control AUC (one measurement per scroll,
+stamped on each pair -- not a per-pair measurement): ink separated from blank
+sheet INSIDE the
 text block — same sheet, same preservation, same damage. 0.96–0.99 on curated
 segmentations, 0.84 on auto-grown ones. This is how we killed our own false
 positives; one earlier candidate scored r=+0.44 held-out and 0.21 on blank
@@ -105,8 +112,14 @@ above is usable rather than only documented.
 
 Known limits, stated plainly: crops are 1.16 mm square, smaller than one
 letter of this scribe's hand — these are training tiles, not readable views.
-All pairs are from PHerc0139. Most labelled ink volume is depth-ambiguous
-rather than depth-resolved; we would rather withhold a depth than invent one.
+All pairs are from PHerc0139. 12.7% of labelled ink columns carry a resolved
+depth; the other 87.3% are shipped as code 3 (ink present, depth ambiguous) --
+we would rather withhold a depth than invent one. The ink floor is
+high-precision and LOW-RECALL: at its 0.2% false-positive operating point it
+recovers 14.2% of known ink, so code 2 means "the detector saw nothing here",
+not "there is nothing here". Two of the 28 pairs are committed in
+samples/pairs/ so a reviewer can open a working zarr immediately; the full set
+regenerates from the public bucket with the commands in the README.
 And the method requires an existing segmentation, so it does not yet reach
 #193's hardest case — labels for regions no segmentation covers. That case is
 open and we would like to work on it.
@@ -133,111 +146,72 @@ reading the masks wrong?
 
 ---
 
-## ADDENDUM (2026-07-31 evening) — a diagnostic, not a label set
-
-Append to the END of the long "how does this increase the probability of
-reading complete scrolls" answer, after the "Known limits" paragraph.
-
-Framing note (do not paste this bit): this is aimed at the 2026 Open Problems
-page, not at #192/#193 as a labels deliverable. That page's "What's next?" asks
-"can we reduce the dependence on approximate labels, and reliably tell 'no ink'
-apart from 'no ink recovered yet'?", its bottleneck table asks for "stronger
-diagnostics", and its label-quality section asks for active learning that
-"identifies the most uncertain or valuable regions and asks humans to correct
-only those." That is what this is.
+## ADDENDUM — cross-energy corroboration on PHerc0139 (append to the end of the long answer)
 
 ```
-ADDED THE SAME DAY — A DIAGNOSTIC FOR "NO INK" VS "NO INK RECOVERED YET".
+Added the same day, and scoped narrowly on purpose. PHerc0139 was scanned at
+two X-ray energies (59 keV and 78 keV) and its ink maps were published twice,
+with different recipes, months apart. That allows a question no single map
+answers: does a second scan corroborate this label? We could not find that
+comparison published, so we built it, and we ran it against our own pairs
+above.
 
-Your Open Problems page asks whether we can reliably tell "no ink" from "no ink
-recovered yet", and lists stronger diagnostics as what would help most with
-cross-scroll generalization. This is an attempt at one, plus the uncertainty
-ranking your label-quality section asks for.
+Applied to the 28 pairs, the check writes into each label's metadata whether
+the label's footprint is called by its own source map at ds8 resolution and
+whether the 78 keV scan corroborates it. Of 22 ink pairs the median
+corroboration is 1.00 and the mean 0.836 -- but the check found four ink pairs
+and one negative pair that do not hold up, and it names which map disagrees.
+Three of the four are footprints their own 59 keV source map does not call at
+ds8 (0.00, 0.11, 0.00) -- a labelling question rather than a cross-energy one.
+One (20250108000003-w028, y9088_x14336) is a genuine cross-energy
+non-corroboration: the source calls it at 0.70, the independent scan at 0.17.
+One more is the reverse and the most interesting in the set
+(20250223000000-w059, y11776_x8320): the source map does not call it and the
+independent scan calls it at 0.98. And one pair we shipped as certified blank
+(20260126000000-w045, y12160_x12288) is 86.5% called ink by BOTH maps -- not
+disputed between scans, contradicted by both. All five are flagged in place
+rather than dropped; which are labelling errors and which are detector
+disagreements is your annotation team's call, not ours.
 
-THE LEVER. Three scrolls were scanned at two photon energies and published with
-two different ink recipes: PHerc1667, PHerc0139 and PHerc0814, at 59 keV (the
-1.129um-...-L1 flattening, recipe mrg20736-1um-s1z2) and 78 keV (2.399um,
-new_canon_autoresearch_recipe). For any ink label we can therefore ask: does a
-second scan corroborate this? We could not find that comparison published
-anywhere, and it is free -- both maps are already in the bucket for 62
-segments.
+On the scroll as a whole (all 37 segments with both maps): the two maps agree
+far above a density-preserving spatial null -- median top-decile Jaccard 0.417
+against a null of 0.030, median enrichment 14.2x, every segment at the null's
+p floor of 0.04 -- and at a top-decile call they agree on 58.9% (median) of
+each other's calls. Two bounds
+travel with that number and with every certificate: the two recipes are
+plausibly entangled through training data (your Open Problems page describes
+the 78 keV recipe as trained on PHerc0139 and validated on PHerc1667
+pseudo-labels), so agreement may partly reflect shared lineage; and 1.1 um
+data is cleaner than 2.4 um by your own measurement, so some disagreement is
+resolution, not error. This is cross-energy and cross-recipe -- not
+independent -- and it is aimed at a question your page asks directly: telling
+"no ink" from "no ink recovered yet".
 
-Registration is measured, not assumed. Resizing one canvas onto the other by
-the voxel ratio, the best global fit is sx=1.000 sy=1.000 dy=0 dx=0 -- the two
-flattenings share a UV layout -- with residual warp median 0 px, IQR 45 px
-(0.8 mm), removed by a block phase-correlation field. Registering on the sheet
-mask is wrong: the 78 keV flattening recovers ~1.8x more sheet and drags the
-fit to a false sy=0.87.
+We also searched the sheet neither map calls, with a min(z59, z78) statistic
+against an area-matched paired null: for each shift both the registered and
+de-registered maxima are taken over the same intersection region, so the
+comparison is like-for-like. No survivors. 35 of 37 segments produced a usable
+null (median 99 matched draws); zero reach p <= 0.05 and the smallest p is
+0.090.
 
-WHAT IT SAYS. Agreement is far above chance and strengthens as the call
-tightens -- 4.3x over a rolled spatial null at the top 20% of sheet, 69.3x at
-the top 1%, threshold-free Spearman 0.374, median 0.456 across 37 PHerc0139
-segments, every segment at the null's p floor. But at a top-decile call the two
-maps agree on only ~40% of each other's calls, and 56% allowing a full letter
-of slack.
+Two limits travel with that negative and we would rather state them than let
+them be found. First, coverage: the uncalled region is ribbons between text
+lines, and of 67.1 cm2 searched only 28.7 cm2 can host a letter-sized disc and
+10.2 cm2 has room for a four-letter run. Second, sensitivity, measured by
+planting synthetic ink rather than assumed: a single letter at the median
+amplitude of real published calls lands only just above the null's 95th
+percentile (2.72 against 2.45). This search has real power for
+stronger-than-typical marks and multi-letter features, and is marginal for one
+faint letter. It is a bounded negative, not a clean sheet.
 
-We are careful about what that disagreement means, because your own page says
-1.1 um data yields cleaner results than 2.4 um. The two maps are therefore not
-peers, and part of the divergence is that known resolution asymmetry rather
-than either being wrong. What the number does bound is how far a single
-published map can serve as ground truth for the annotator who is, per #192,
-drawing letters over model output.
-
-APPLIED TO OUR OWN SUBMISSION, IT FOUND TWO PAIRS WE SHOULD NOT HAVE SHIPPED
-CLEAN. Run against the 28 pairs above and attached to each label's .zattrs: 22
-ink pairs, median corroboration 1.00 -- but one (20250108000002-w027,
-y8576_x17280) is corroborated 0.00, the second scan does not see that ink at
-all. Of 6 negative pairs, one (20260126000000-w045, y12160_x12288) is only 5.5%
-blank in both scans: shipped as certified blank, read by the other scan as
-largely inked. Both flagged in place, not dropped.
-
-UNCERTAINTY RANKING FOR RE-ANNOTATION. For all 62 paired segments we ship a 2D
-per-segment map at 18 um/px of where the two scans agree, disagree, or are both
-silent (out/consensus). The disagreement channel is a ranking of where a human
-annotator's attention is worth most. It is 2D and is explicitly NOT a #192
-deliverable -- #192 asks for true 3D and the pairs above are that. We built it
-as one first, realised it was the projection #192 forbids, and demoted it.
-
-AND WE SEARCHED FOR UNCALLED INK, WITH THE SENSITIVITY STATED. Two scans
-average down independent noise, so a mark too faint for either detector alone
-can clear a joint threshold. We searched min(z59, z78) over every letter-sized
-box on sheet both scans cover and neither calls, and separately with a matched
-filter for a run of eight letters along a baseline, swept over +-4 degrees.
-
-Nothing. The line test -- the better-powered of the two, since a point maximum
-over millions of boxes has a 4-7 sigma null from extreme-value statistics
-alone -- is quiet on all 7 PHerc1667 segments (p >= 0.18) and all 32 PHerc0139
-segments (zero at p <= 0.05, best 0.118). The point search produced four
-PHerc0139 candidates, best p=0.015, but across 37 tests ~1.9 are expected at
-p <= 0.05 by chance and none clears Bonferroni. The best-looking one reached
-p=0.019 after 999 nulls and died to the render: 0.78 mm from the sheet edge,
-under half a letter.
-
-THE HONEST SIZE OF THAT NEGATIVE. "215 cm2 searched" would be misleading and we
-nearly wrote it. What remains after removing called text, a 1.5 mm spillover
-keep-out and a 1.5-letter edge keep-out is not open field -- it is narrow
-ribbons between lines. Measured: of 215.2 cm2, only 52.4 cm2 has a full letter
-of clearance and only 32.6 cm2 has room for a four-letter run. On one segment
-the largest circle fitting inside the search region is 1.20 letters across. So
-the claim is "no unnoticed letter over 52.4 cm2 of effective area, no unnoticed
-word over 32.6 cm2" -- not over 215.
-
-That kill also exposed a flaw we fixed rather than worked around. Our letter-box
-accepted any box at least half on sheet, and 60.6% of the search area lay within
-two letters of a sheet boundary, so the search was dominated by the region where
-its own statistic misbehaves. Boxes must now be 95% on shared sheet and the
-search is eroded 1.5 letters from every boundary; all numbers above are
-post-fix, and the contaminated earlier ones are marked as such in
-findings/CROSSENERGY_1667.md.
-
-THE BOUND ON ALL OF IT. Both recipes are ScrollPrize models. Your page
-describes the PHerc1667 maps as the product of a six-iteration pseudo-labeling
-loop, and describes new_canon_autoresearch_recipe as trained on PHerc0139 and
-validated on PHerc1667 pseudo-labels -- so the two are plausibly entangled and
-part of the measured agreement may be shared model lineage rather than shared
-ink. Accurately: this is cross-energy and cross-recipe, not fully independent.
-Two energies also share the papyrus, so agreement does not separate ink from
-sheet CONDITION. Every certificate states both bounds. If you can say whether
-those two recipes share training data, it would sharpen the diagnostic
-considerably.
+Full disclosure that belongs with this: the first version of this instrument
+had a warp applied with the wrong sign, a null that compared against the
+wrong call density, and a test suite that could not fail. All of it was
+caught by adversarial review before submission, fixed, and re-run; the
+pipeline is now gated by a positive control that plants known shifts and
+known synthetic ink and fails unless they are recovered
+(tools/positive_control_xe.py). The failure catalog with the check that now
+guards each bug is findings/CROSSENERGY_1667.md. Results for PHerc1667 and
+PHerc0814 were measured with the defective instrument and are withdrawn
+rather than corrected; the corrected reruns are August work.
 ```
