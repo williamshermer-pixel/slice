@@ -354,11 +354,16 @@ export default function RecordPage() {
             0 unlabelled · 1 ink · 2 certified blank · 3 depth ambiguous
           </Row>
           <Row label="depth, measured not projected">
-            sd 4 layers over ~9 distinct centres per crop
+            mean sd 7.3 layers over 13.2 distinct centres per ink crop
           </Row>
-          <Row label="ink floor">calibrated at 0.2% FPR on known-blank sheet</Row>
+          <Row label="how much depth is resolved">
+            12.7% of ink columns; the rest ship as code 3, not guessed
+          </Row>
+          <Row label="ink floor">
+            0.2% FPR on known-blank sheet · recovers 14.2% of known ink
+          </Row>
           <Row label="surface-confound control">
-            AUC 0.96–0.99 curated · 0.84 auto-grown (in every pair)
+            AUC 0.96 curated · 0.84 auto-grown (one scroll-level number per pair)
           </Row>
           <Row label="QC gate">empty pairs removed, not counted</Row>
         </div>
@@ -383,6 +388,89 @@ export default function RecordPage() {
       </Section>
 
       {/* ---- reproduce ------------------------------------------------ */}
+      <Section
+        eyebrow="Audit · added 2026-07-31"
+        title="A second scan, and what it found in our own labels"
+      >
+        <p>
+          PHerc0139 was scanned at two X-ray energies, 59 keV and 78 keV, and
+          the project published an ink map from each. That allows a question no
+          single map answers: does a second scan, through a different
+          reconstruction and a different recipe, corroborate this label? We ran
+          it against our own 28 pairs before anything else.
+        </p>
+        <div className="ledger mt-4">
+          <Row label="pairs audited">28 · flags written into each label&apos;s .zattrs</Row>
+          <Row label="flagged">5 · each with a verdict naming which map disagrees</Row>
+          <Row label="not called by their own source map">
+            3 · a labelling question, not a cross-energy one
+          </Row>
+          <Row label="true cross-energy disagreement">
+            1 · source calls it 0.70, second scan 0.17
+          </Row>
+          <Row label="a certified blank both maps contradict">
+            1 · 86.5% of it is called ink by BOTH scans
+          </Row>
+          <Row label="scroll-wide call agreement">
+            58.9% median over 37 segments
+          </Row>
+          <Row label="agreement vs spatial null">
+            Jaccard 0.417 vs 0.030 · median enrichment 14.2×
+          </Row>
+        </div>
+        <p className="mt-4 text-ash">
+          Two bounds travel with every certificate. The two recipes are
+          plausibly entangled through training data, so agreement may partly
+          reflect shared lineage rather than shared ink; and 1.1 µm data is
+          cleaner than 2.4 µm by the project&apos;s own measurement, so some
+          disagreement is resolution rather than error. This is{" "}
+          <em className="font-display">cross-energy and cross-recipe</em>, not
+          independent.
+        </p>
+        <p className="mt-3 text-ash">
+          A search of the sheet neither map calls returned nothing: 35 of 37
+          segments produced a usable area-matched paired null and none reaches
+          p 0.05. The negative is bounded rather than clean — of 67.1 cm² searched
+          only 28.7 cm² can host a letter-sized disc, and a synthetic letter
+          planted at the median amplitude of real calls scores 2.72 against a
+          null 95th percentile of 2.45. Marginal for one faint letter, and it
+          says so.
+        </p>
+      </Section>
+
+      <Section
+        eyebrow="Correction · struck, not erased"
+        title="The first version of this audit was broken"
+      >
+        <p>
+          The instrument above shipped once in a defective state: a registration
+          warp applied with an inverted sign, which actively degraded the
+          alignment it claimed to fix; a null that compared against the wrong
+          call density and inflated agreement roughly six-fold; a line-search
+          whose null was the identity operation, giving it zero power (planting
+          real ink made it <em className="font-display">less</em> significant);
+          and 62 certificates asserting a registration measurement no tool in
+          the repo performs.
+        </p>
+        <p className="mt-3 text-ash">
+          A test suite reported 13 of 13 passing throughout, because its checks
+          grepped source text, were true by construction, or compared an output
+          against itself. Adversarial review caught all of it before submission.
+          Every number on this page is from the corrected rerun; results for two
+          other scrolls measured with the defective instrument are withdrawn
+          rather than corrected.
+        </p>
+        <p className="mt-3 text-ash">
+          The missing check is now the gate:{" "}
+          <span className="text-ochre">tools/positive_control_xe.py</span>{" "}
+          plants a known shift and known synthetic ink and fails unless both are
+          recovered. It has since caught two further bad designs before they
+          ran. The full failure catalog, with the check that now guards each
+          bug, is in{" "}
+          <span className="text-ochre">findings/CROSSENERGY_1667.md</span>.
+        </p>
+      </Section>
+
       <Section eyebrow="Reproduce" title="Everything here is scripted">
         <p className="text-ash">
           MIT licensed. The tools stream the public bucket directly; the search
