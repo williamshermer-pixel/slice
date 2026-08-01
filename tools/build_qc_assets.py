@@ -46,7 +46,25 @@ def read_zarr(path):
     return a, cert
 
 
+SEGFULL = {}
+
+
+def _load_segfull():
+    """Bucket paths need the full segment directory name, not the 14-digit id."""
+    import urllib.request, re as _re
+    B = "https://vesuvius-challenge-open-data.s3.us-east-1.amazonaws.com"
+    req = urllib.request.Request(
+        f"{B}/?list-type=2&prefix=PHerc0139/segments/&delimiter=/&max-keys=1000",
+        headers={"User-Agent": "Mozilla/5.0"})
+    x = urllib.request.urlopen(req, timeout=60).read().decode()
+    for p in _re.findall(r"<Prefix>([^<]*)</Prefix>", x):
+        name = p.rstrip("/").split("/")[-1]
+        if len(name) >= 14:
+            SEGFULL[name[:14]] = name
+
+
 def main():
+    _load_segfull()
     os.makedirs(DEST, exist_ok=True)
     index = []
     for p in sorted(glob.glob(os.path.join(SRC, "*.zarr"))):
@@ -96,7 +114,8 @@ def main():
         a = cert["agreement"]
         c = cert["counts_pct_of_canvas"]
         index.append(dict(
-            segment=seg, w=int(base.shape[1]), h=int(base.shape[0]),
+            segment=seg, segment_full=SEGFULL.get(seg, seg),
+            w=int(base.shape[1]), h=int(base.shape[0]),
             downsample=f, um_per_px=round(DS8_UM * f, 2),
             letter_px=round(cert["letter_height_px"] / f, 1),
             pct=c, shared_sheet_pct=a["shared_sheet_pct"],

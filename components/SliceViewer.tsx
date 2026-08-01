@@ -82,9 +82,22 @@ export default function SliceViewer() {
   const params = useSearchParams();
   const seed = useRef(readUrlState(params)).current;
 
-  const [source, setSource] = useState<Source>(seed.source ?? "scroll");
+  /**
+   * Default to a LABELLED sheet, not a raw scroll.
+   *
+   * The old default was PHerc. 125 raw — a cross-section in which letters
+   * cannot appear at all by geometry, and which carries no labels, so a first
+   * visit showed a grey blob and none of the work. Land on a PHerc0139 sheet
+   * that has cross-scan labels instead; the raw scrolls are one click away.
+   */
+  const DEFAULT_SOURCE: Source = "sheet";
+  const DEFAULT_SPECIMEN = "0139-20260302000001";
+  const [source, setSource] = useState<Source>(seed.source ?? DEFAULT_SOURCE);
   const [specimenId, setSpecimenId] = useState(
-    seed.specimenId ?? specimensFor(seed.source ?? "scroll")[0].id,
+    seed.specimenId ??
+      (findSurface(DEFAULT_SPECIMEN)
+        ? DEFAULT_SPECIMEN
+        : specimensFor(seed.source ?? DEFAULT_SOURCE)[0].id),
   );
 
   const [volume, setVolume] = useState<Volume | null>(null);

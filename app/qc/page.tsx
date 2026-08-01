@@ -34,6 +34,7 @@ type Seg = {
   registration: Record<string, number | string>;
   sources: Record<string, string>;
   surface_id: string;
+  segment_full: string;
   clusters: { y: number; x: number; area_mm2: number; letters: number }[];
 };
 
@@ -50,6 +51,55 @@ type Seg = {
  */
 const LETTER_SURFACE_PX = 720; // 1.61 mm at 2.258 um/voxel
 
+/**
+ * Neuroglancer link onto the same sheet — BUILT, NOT SHIPPED.
+ *
+ * Their demo instance reads `zarr2://` from the Vesuvius bucket, which is
+ * CORS-open, and it accepts this URL: the layer appears by name and the
+ * position is taken. But every panel renders blank grey, so no link to it is
+ * exposed in the UI.
+ *
+ * What is known: the volume exists (verified against the bucket), the
+ * coordinates are right, and the same viewer renders the project's own
+ * `volumes/*-masked.zarr` fine. The difference is that those are scroll
+ * volumes while these are per-segment SURFACE volumes -- multiscale groups
+ * with an anisotropic pyramid that keeps every sheet layer at every level.
+ * That is the first thing to check when picking this up.
+ *
+ * Kept here because the URL construction is correct and only the rendering is
+ * unresolved. A link that opens a grey void is worse than no link.
+ */
+const BUCKET =
+  "https://vesuvius-challenge-open-data.s3.us-east-1.amazonaws.com";
+
+function neuroglancerHref(seg: Seg, y: number, x: number) {
+  const src = seg.sources["59keV"] ?? "";
+  // "PHerc0139-<seg>-<volume>-<date>-<recipe>-tile...tif" -> the volume name
+  const m = src.match(/-(1\.129um-[^-]*-[^-]*-volume-\d+-L1)-/);
+  const vol = m ? `${m[1]}.zarr` : null;
+  if (!vol) return null;
+  const url = `${BUCKET}/PHerc0139/segments/${seg.segment_full}/surface-volumes/${vol}`;
+  const state = {
+    dimensions: { z: [1, ""], y: [1, ""], x: [1, ""] },
+    position: [58, y, x],
+    crossSectionScale: 2,
+    layers: [
+      {
+        type: "image",
+        source: `zarr2://${url}`,
+        tab: "source",
+        shader:
+          "#uicontrol invlerp normalized\nvoid main() { emitGrayscale(normalized()); }",
+        name: `0139-${seg.segment}`,
+      },
+    ],
+    layout: "xy",
+  };
+  return `https://neuroglancer-demo.appspot.com/#!${encodeURIComponent(
+    JSON.stringify(state),
+  )}`;
+}
+
 function sheetHref(seg: Seg, y: number, x: number) {
   const win = Math.round(6 * LETTER_SURFACE_PX);
   const p = new URLSearchParams({
@@ -61,7 +111,7 @@ function sheetHref(seg: Seg, y: number, x: number) {
     h: String(win),
     l: "1",
   });
-  return `/?${p.toString()}`;
+  return `/viewer?${p.toString()}`;
 }
 
 const INK = [233, 229, 219] as const;      // papyrus
@@ -336,11 +386,8 @@ export default function QCPage() {
           </p>
           <div className="ledger">
             {seg.clusters.map((c, n) => (
-              <a
+              <div
                 key={n}
-                href={sheetHref(seg, c.y, c.x)}
-                target="_blank"
-                rel="noreferrer"
                 className="flex items-baseline justify-between gap-4 border-b border-rule py-[6px] hover:bg-panel"
               >
                 <span className="eyebrow shrink-0">
@@ -348,9 +395,16 @@ export default function QCPage() {
                 </span>
                 <span className="font-mono text-[12px] text-ash">
                   {c.area_mm2} mm² · y {c.y} x {c.x}
-                  <span className="ml-3 text-ochre">open the sheet ↗</span>
+                  <a
+                    className="ml-3 text-ochre underline"
+                    href={sheetHref(seg, c.y, c.x)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    our viewer ↗
+                  </a>
                 </span>
-              </a>
+              </div>
             ))}
           </div>
         </section>
