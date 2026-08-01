@@ -24,16 +24,26 @@ published twice.**
 | published | 2026-07-09 | 2026-04-17 |
 
 Different photon energy, different reconstruction, different flattening run,
-different model recipe, three months apart. The only thing the two share is the
-papyrus.
+different model recipe, three months apart.
+
+**How independent, exactly.** The *scans* are independent in physics — energy,
+reconstruction, flattening. The two ink *maps* are both ScrollPrize model
+output, and nothing in the public bucket says whether the two recipes share
+architecture, training data or lineage. If they do, part of the agreement
+measured below is shared MODEL bias rather than shared ink. The accurate label
+for this method is **cross-energy and cross-recipe, not fully independent** —
+the physics half of the independence is verified, the model half is not. What
+would settle it: a detector of different lineage as a third opinion, or a word
+from the maintainers. We are asking.
 
 That matters because of how this project's candidates have died. The
 2026-07-29 differential died when 23 of 24 rolled copies of *our own map*
 reproduced it. The aimed-window family died as box-filter edge geometry after
 clearing spatial nulls, independent replication *and* a physics control. Both
 survived everything because every check drew on the same input volume. **Two
-energies do not share an input.** Agreement between them is evidence that no
-null computed over a single map can supply.
+energies do not share an input volume.** Agreement between them is evidence no
+null computed over a single map can supply — bounded by the lineage caveat
+above.
 
 ## Registration — measured, not assumed
 
@@ -180,20 +190,47 @@ reasoning as the spillover keep-out. Re-running 0139 under the corrected
 instrument is what produced the numbers above. Every cross-energy figure
 reported before that fix was computed on the contaminated region.
 
-## The deliverable: consensus-certified labels
+## Not a #192 deliverable — a QC overlay, and a certificate
+
+**Read #192 before reading this section.** It asks for ink labels "in true 3d
+rather than a single image projected across multiple layers." The rasters below
+are **2D**, one flat image per segment at ds8 (18.064 µm/px). They are exactly
+the projection the issue forbids, and calling them a #192 deliverable would be
+shipping the mistake this project already threw away once. They were built as
+one here on 2026-07-31 and demoted before submission.
+
+What they legitimately are: **a QC overlay for annotators** — a map of where two
+scans at different energies agree, disagree, or are both silent. #192's first
+line says current ink labels are drawn by a human annotator over model output;
+a "the second scan does not corroborate this call" overlay is directly useful to
+that person.
+
+The part that does attach to #192 is `tools/certify_pairs_crossenergy.py`, which
+annotates the true-3D pairs (`[116, 512, 512]`, native resolution, ready-to-run)
+with a corroboration block in each label's `.zattrs`. It found two suspect pairs
+inside our own shipped deliverable: one ink pair corroborated 0.00 by the second
+scan, and one "certified blank" pair that the second scan reads as 94.5% inked.
+Both are flagged in place rather than dropped.
+
+Nor does any of this answer **#193's actual problem**, which is the catch-22 of
+needing labels for regions that have no segmentation. This method requires a
+flattened surface volume and two published ink maps — it lives inside that
+catch-22.
+
+### The QC overlay itself
 
 `tools/make_consensus_labels.py` → `out/consensus/<scroll>/<segment>.zarr`,
 plain zarr v2 / zlib, one uint8 raster per segment at 18.064 µm/px:
 
 | code | meaning |
 | --- | --- |
-| 1 | **consensus ink** — both independent scans call it |
+| 1 | **consensus ink** — both scans (59 keV and 78 keV) call it |
 | 2 | **consensus blank** — neither calls it, clear of both the spillover and sheet-edge keep-outs |
 | 3 | **disputed** — exactly one scan calls it, shipped as its own code rather than silently resolved |
 | 0 | unlabelled — not covered by both scans, or inside the edge keep-out |
 
 Code 2 is the half that thresholds cannot give you: "below my cut" is not
-"blank", but "neither of two independent scans saw anything here, and it is far
+"blank", but "neither of two scans at different energies saw anything here, and it is far
 from anything either did see" is a measurement. Code 3 is shipped rather than
 resolved because resolving it would be exactly the arbitrary choice this method
 exists to avoid.
@@ -205,12 +242,35 @@ image is redistributed; the bucket path for the image half is in the
 certificate. Verified end-to-end: reassembling all chunks reproduces the
 certificate counts exactly.
 
-## What this is worth to the prize
+## What this is worth, stated against what the issues actually ask
 
-It is a label-generation method with a confidence measure that is *physical*
-rather than a threshold choice — which is what villa **#193** asks for, and it
-upgrades the **#192** pairs: consensus-certified ink and consensus-certified
-blank, each backed by two independent scans. It also hands their Annotation
-Team a number they do not currently have: how much two published ink maps of
-the same sheet actually disagree.
+Written after re-reading #192 and #193 in full, which should have happened
+before any of this was built.
+
+**It does not close either issue.** #192 wants true-3D ready-to-run ink labels;
+the rasters here are 2D. #193 wants label generation that escapes the
+segmentation catch-22; this method requires a segmentation. Anyone reading it
+as an answer to either has been misled, so the sections above say so plainly.
+
+**What it does contribute, honestly scoped:**
+
+1. **A corroboration test for any existing ink label** — does a scan at a
+   different photon energy, through a different reconstruction and recipe,
+   agree? Applied to our own #192 pairs it found one ink pair corroborated 0.00
+   and one "certified blank" that the second scan reads as 94.5% inked. A
+   submission that audits itself and ships the failures is worth more than one
+   that does not.
+2. **A number the annotation team does not have** — two published maps of the
+   same sheet agree on ~40% of each other's calls, 56% at one-letter tolerance.
+   That bounds how far any single map can serve as ground truth, which matters
+   directly to #192's opening complaint about annotators drawing over model
+   output.
+3. **A QC overlay** for those annotators, for all 62 paired segments.
+4. **A powered negative**: ~237 cm² of uncalled sheet searched with a method
+   that gains sensitivity from scan independence, and found nothing — with the
+   sensitivity stated rather than implied.
+
+**The bound on all four:** both recipes are ScrollPrize models whose shared
+lineage cannot be verified from the public bucket. This is cross-energy and
+cross-recipe, not fully independent, and every certificate says so.
 

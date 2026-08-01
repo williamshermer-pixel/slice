@@ -224,9 +224,21 @@ def main():
               f"only78 {100*o78:5.2f}%  J {obs:.3f} vs null {nulls.mean():.3f} "
               f"= {('%.1fx' % enrich) if enrich else 'undef'}  p={p:.3f}")
 
-    with open(os.path.join(OUT, "crossenergy.json"), "w") as f:
+    # MERGE, never overwrite. Re-running a single segment must not wipe the
+    # rest — it did, twice: once here and once in conjunction_1667.py. Running
+    # one 0814 segment left crossenergy.json holding 1 of 18, which then
+    # silently produced 1 of 18 label certificates downstream.
+    path = os.path.join(OUT, "crossenergy.json")
+    prev = {}
+    if os.path.exists(path):
+        try:
+            prev = json.load(open(path)).get("segments", {})
+        except Exception:
+            prev = {}
+    prev.update(report)
+    with open(path, "w") as f:
         json.dump(dict(um_per_px=DS8_UM, letter_mm=LETTER_MM,
-                       call_pct=CALL_PCT, null_n=NULL_N, segments=report), f,
+                       call_pct=CALL_PCT, null_n=NULL_N, segments=prev), f,
                   indent=1)
     print(f"\nwrote {OUT}/crossenergy.json")
 

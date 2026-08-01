@@ -4,7 +4,7 @@
  "segment": "20260302000001",
  "codes": {
   "0": "unlabelled - not covered by both scans, or within the edge keep-out where a letter-box average is not trustworthy",
-  "1": "consensus ink - both independent scans call it",
+  "1": "consensus ink - both scans (59 keV and 78 keV) call it",
   "2": "consensus blank - neither scan calls it, and it clears both the spillover keep-out from any call and the sheet-edge keep-out",
   "3": "disputed - exactly one scan calls it"
  },
@@ -29,7 +29,7 @@
   "78keV": "PHerc0139-20260302000001-2.399um-0.22m-78keV-volume-20260102150214-20260417190342-new_canon_autoresearch_recipe-tile256-stride128.tif"
  },
  "source_bucket_prefix": "https://vesuvius-challenge-open-data.s3.us-east-1.amazonaws.com/PHerc0139/segments/",
- "independence": "59 keV (1.129um-...-L1 flattening, 2.258 um/voxel) and 78 keV (2.399um, 2.399 um/voxel): different photon energy, reconstruction, flattening run and model recipe, published months apart. Shared input: the papyrus only.",
+ "independence": "59 keV (1.129um-...-L1 flattening, 2.258 um/voxel) and 78 keV (2.399um, 2.399 um/voxel): different photon energy, reconstruction, flattening run and model recipe, published months apart. Shared: the papyrus, and possibly model lineage -- see LIMITATION_model_lineage.",
  "registration": "78 keV map resized onto the 59 keV canvas by the voxel ratio; measured best global fit sx=1.000 sy=1.000 dy=0 dx=0 (the flattenings share a UV layout), then a block phase-correlation field for residual warp, median 0 px, IQR ~45 px (0.8 mm). Registering on the sheet MASK is wrong -- 78 keV recovers ~1.8x more sheet and drags the fit to a false sy=0.87.",
  "agreement": {
   "shared_sheet_pct": 43.6,
@@ -45,7 +45,8 @@
   "sheet_edge_letters": 1.5,
   "why": "spillover is the model blend kernel and is a fixed physical distance, not a multiple of the hand; the edge keep-out exists because 60.6% of an unrestricted search area lies within two letters of a sheet boundary, where a letter-box average runs off the sheet and manufactured this project's first cross-energy candidate"
  },
- "LIMITATION": "Two energies share the papyrus, so agreement does NOT separate ink from sheet CONDITION -- text sits on well-preserved sheet and both scans respond to preservation. These labels are cross-scan certified, not condition-controlled.",
+ "LIMITATION_model_lineage": "The two scans are independent in PHYSICS (energy, reconstruction, flattening). The two ink MAPS are both ScrollPrize model output and we cannot verify from the public bucket whether the recipes share architecture, training data or lineage. If they do, part of the measured agreement is shared MODEL bias, not shared ink. Accurate description: cross-energy and cross-recipe, NOT fully independent. The physics half of the independence is verified; the model half is not.",
+ "LIMITATION_condition": "Two energies share the papyrus, so agreement does NOT separate ink from sheet CONDITION -- text sits on well-preserved sheet and both scans respond to preservation. These labels are cross-scan certified, not condition-controlled.",
  "license": "CC BY-NC 4.0, (c) Vesuvius Challenge. Derived from published ink detections. Labels only -- no scroll image data is redistributed here.",
  "generator": "tools/make_consensus_labels.py"
 }

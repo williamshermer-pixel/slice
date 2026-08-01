@@ -9,10 +9,11 @@ label changes; there is no measurement that says which choice was right.
 Three scrolls in the bucket were scanned TWICE at different photon energies and
 published twice with different recipes months apart — PHerc1667, PHerc0139 and
 PHerc0814 (59 keV via the 1.129um-...-L1 flattening, and 78 keV via 2.399um).
-The two share nothing but the papyrus. That makes a label's confidence
+They share the papyrus, and possibly model lineage (limitation 2). That
+makes a label's confidence
 measurable rather than chosen:
 
-    1  CONSENSUS INK    both independent scans call it
+    1  CONSENSUS INK    both scans call it
     2  CONSENSUS BLANK  neither calls it, and it is far enough from every call
                         and every sheet edge for that silence to mean something
     3  DISPUTED         exactly one scan calls it — shipped as its own code
@@ -26,11 +27,28 @@ Every array carries a certificate in .zattrs — both source volumes and recipes
 the measured registration, the agreement statistics against a spatial null, the
 keep-outs, and the limitation below.
 
-LIMITATION, on every certificate: two energies share the papyrus, so agreement
-does not separate ink from sheet CONDITION. Text sits on well-preserved sheet,
-and both scans respond to preservation. These labels are cross-scan certified,
-NOT condition-controlled. Use the condition-control AUC in the #192 pairs for
-that axis.
+TWO LIMITATIONS, on every certificate. Neither is hedging; both bound what the
+word "independent" is doing here.
+
+1. CONDITION. Two energies share the papyrus, so agreement does not separate
+   ink from sheet condition. Text sits on well-preserved sheet and both scans
+   respond to preservation. These labels are cross-scan certified, NOT
+   condition-controlled -- use the condition-control AUC in the #192 pairs for
+   that axis.
+
+2. MODEL LINEAGE, and this one bounds the headline claim. The two scans are
+   independent in PHYSICS -- different photon energy, reconstruction and
+   flattening run. The two ink MAPS are both ScrollPrize model output
+   (`mrg20736-1um-s1z2` and `new_canon_autoresearch_recipe`), and we cannot
+   verify from the public bucket whether they share architecture, training
+   data or lineage. If they do, some part of the measured agreement is shared
+   MODEL bias rather than shared ink. So the honest description is
+   "cross-energy, cross-recipe" -- not "fully independent." The physics half of
+   the independence is verified; the model half is not.
+
+   What would settle it: a detector of different lineage as a third opinion,
+   or a statement from the maintainers about whether the two recipes share
+   training data. We are asking.
 
 Labels only. The image half is never redistributed here — the bucket path for
 each segment is in the certificate, and the data is CC BY-NC 4.0,
@@ -56,7 +74,7 @@ CHUNK = (512, 512)
 
 CODES = {"0": "unlabelled - not covered by both scans, or within the edge "
               "keep-out where a letter-box average is not trustworthy",
-         "1": "consensus ink - both independent scans call it",
+         "1": "consensus ink - both scans (59 keV and 78 keV) call it",
          "2": "consensus blank - neither scan calls it, and it clears both the "
               "spillover keep-out from any call and the sheet-edge keep-out",
          "3": "disputed - exactly one scan calls it"}
@@ -152,7 +170,8 @@ def main():
                     "59 keV (1.129um-...-L1 flattening, 2.258 um/voxel) and "
                     "78 keV (2.399um, 2.399 um/voxel): different photon energy, "
                     "reconstruction, flattening run and model recipe, published "
-                    "months apart. Shared input: the papyrus only."),
+                    "months apart. Shared: the papyrus, and possibly "
+                    "model lineage -- see LIMITATION_model_lineage."),
                 "registration": (
                     "78 keV map resized onto the 59 keV canvas by the voxel "
                     "ratio; measured best global fit sx=1.000 sy=1.000 dy=0 "
@@ -181,7 +200,17 @@ def main():
                                     "boundary, where a letter-box average runs "
                                     "off the sheet and manufactured this "
                                     "project's first cross-energy candidate"},
-                "LIMITATION": (
+                "LIMITATION_model_lineage": (
+                    "The two scans are independent in PHYSICS (energy, "
+                    "reconstruction, flattening). The two ink MAPS are both "
+                    "ScrollPrize model output and we cannot verify from the "
+                    "public bucket whether the recipes share architecture, "
+                    "training data or lineage. If they do, part of the measured "
+                    "agreement is shared MODEL bias, not shared ink. Accurate "
+                    "description: cross-energy and cross-recipe, NOT fully "
+                    "independent. The physics half of the independence is "
+                    "verified; the model half is not."),
+                "LIMITATION_condition": (
                     "Two energies share the papyrus, so agreement does NOT "
                     "separate ink from sheet CONDITION -- text sits on "
                     "well-preserved sheet and both scans respond to "

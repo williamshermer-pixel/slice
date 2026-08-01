@@ -1,9 +1,24 @@
 # Citation and data attribution
 
-This project reads data published by the Vesuvius Challenge. It redistributes
-none of it — the browser fetches chunks directly from the public bucket — but
-the data is the substance of the work and is cited here in the form the
-publishers ask for.
+This project reads data published by the Vesuvius Challenge. The data is the
+substance of the work and is cited here in the form the publishers ask for.
+
+**What is and is not redistributed.** The *viewer* re-hosts nothing — every read
+is a direct, anonymous request from your browser to the public bucket. The
+*repository* does redistribute some of it, deliberately and under CC BY-NC 4.0
+with attribution (see `LICENSE-DATA`):
+
+- `samples/pairs/*/image/` — micro-CT surface-volume crops, shipped because
+  ScrollPrize/villa#192 asks for image/label pairs usable without a fetch step.
+- `samples/consensus/` and `out/consensus/` — labels derived from published ink
+  detections. Derived works, not raw data, but still CC BY-NC.
+- `findings/renders/` and `public/` — rendered figures computed from published
+  ink-detection maps and surface volumes. The registration, statistics and
+  colour encoding are ours; the underlying scan content is not.
+
+An earlier version of this file, and of the site footers, claimed the project
+redistributed nothing. That was true of the viewer and became false of the
+repository once the #192 pairs shipped. Corrected 2026-07-31.
 
 ## The scan data
 
