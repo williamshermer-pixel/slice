@@ -33,7 +33,36 @@ type Seg = {
   p: number;
   registration: Record<string, number | string>;
   sources: Record<string, string>;
+  surface_id: string;
+  clusters: { y: number; x: number; area_mm2: number; letters: number }[];
 };
+
+/**
+ * The join. The published ink map is written on the surface volume's own
+ * canvas, so a label pixel maps to the sheet by a pure scale -- no
+ * registration. Verified across all 37 segments to within +/-16 px on canvases
+ * of 20-40k px (~2% of a letter). Clusters in index.json are already in
+ * surface level-0 space; a click on the canvas converts through the PNG's
+ * downsample factor.
+ *
+ * The window is 6 letters across, wide enough to see whether a disagreement
+ * sits on a text line or out on blank sheet.
+ */
+const LETTER_SURFACE_PX = 720; // 1.61 mm at 2.258 um/voxel
+
+function sheetHref(seg: Seg, y: number, x: number) {
+  const win = Math.round(6 * LETTER_SURFACE_PX);
+  const p = new URLSearchParams({
+    src: "sheet",
+    v: seg.surface_id,
+    x: String(Math.max(0, Math.round(x - win / 2))),
+    y: String(Math.max(0, Math.round(y - win / 2))),
+    w: String(win),
+    h: String(win),
+    l: "1",
+  });
+  return `/?${p.toString()}`;
+}
 
 const INK = [233, 229, 219] as const;      // papyrus
 const DISPUTED = [200, 151, 31] as const;  // ochre
@@ -211,9 +240,28 @@ export default function QCPage() {
             </div>
 
             <div className="border border-rule bg-void p-2">
-              <canvas ref={canvas} className="block h-auto w-full" />
+              <canvas
+                ref={canvas}
+                className="block h-auto w-full cursor-crosshair"
+                title="click anywhere to open that spot on the sheet"
+                onClick={(e) => {
+                  const cv = e.currentTarget;
+                  const r = cv.getBoundingClientRect();
+                  const px = ((e.clientX - r.left) / r.width) * cv.width;
+                  const py = ((e.clientY - r.top) / r.height) * cv.height;
+                  const f = seg.downsample * 8; // png -> surface level 0
+                  window.open(
+                    sheetHref(seg, Math.round(py * f), Math.round(px * f)),
+                    "_blank",
+                  );
+                }}
+              />
             </div>
             <p className="caption mt-2 text-[12px]">
+              <span className="text-ochre">
+                Click anywhere on the map to open that exact spot on the
+                papyrus.
+              </span>{" "}
               {seg.um_per_px} µm/px at this zoom (1/{seg.downsample} of the
               label grid) · one letter ≈ {seg.letter_px} px. Any block holding a
               disputed pixel is drawn disputed, so reducing resolution cannot
@@ -276,22 +324,55 @@ export default function QCPage() {
         </div>
       )}
 
-      {worst.length > 0 && (
+      {seg && seg.clusters.length > 0 && (
         <section className="mt-10 border-t border-rule pt-5">
-          <p className="eyebrow mb-2">Most disputed segments</p>
+          <p className="eyebrow mb-1">
+            Work queue · biggest disagreements on this segment
+          </p>
+          <p className="caption mb-3 max-w-[74ch] text-[12px]">
+            Contiguous regions only one scan calls, largest first, sized in
+            letters. Each opens the sheet at that spot so you can judge it
+            against the papyrus rather than against a colour.
+          </p>
+          <div className="ledger">
+            {seg.clusters.map((c, n) => (
+              <a
+                key={n}
+                href={sheetHref(seg, c.y, c.x)}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-baseline justify-between gap-4 border-b border-rule py-[6px] hover:bg-panel"
+              >
+                <span className="eyebrow shrink-0">
+                  {String(n + 1).padStart(2, "0")} · {c.letters} letters²
+                </span>
+                <span className="font-mono text-[12px] text-ash">
+                  {c.area_mm2} mm² · y {c.y} x {c.x}
+                  <span className="ml-3 text-ochre">open the sheet ↗</span>
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {worst.length > 0 && (
+        <section className="mt-8 border-t border-rule pt-5">
+          <p className="eyebrow mb-2">Most disputed segments on this scroll</p>
           <div className="flex flex-wrap gap-2">
-            {worst.map((s) => (
+            {worst.map((sg) => (
               <button
-                key={s}
-                onClick={() => setI(segs.findIndex((x) => x.segment === s))}
+                key={sg}
+                onClick={() => setI(segs.findIndex((x) => x.segment === sg))}
                 className="border border-rule px-2 py-1 font-mono text-[11px] text-ash hover:text-papyrus"
               >
-                {s}
+                {sg}
               </button>
             ))}
           </div>
         </section>
       )}
+
     </main>
   );
 }

@@ -17,6 +17,7 @@ That matters -- the whole point of the page is finding disagreement.
 """
 import glob, json, os, zlib
 import numpy as np
+from scipy import ndimage
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -69,6 +70,29 @@ def main():
         Image.fromarray(rgb).save(os.path.join(DEST, f"{seg}.png"),
                                   optimize=True)
 
+        # The work queue: the biggest contiguous disagreement regions, so an
+        # annotator gets somewhere to GO rather than a picture to look at.
+        # Coordinates are emitted in SURFACE-VOLUME level-0 space (label ds8 x8)
+        # because that is what the viewer takes, and the published ink map is
+        # written on the surface volume's own canvas -- verified across all 37
+        # segments to within +/-16 px on canvases of 20-40k px, i.e. ~2% of a
+        # letter.
+        lb, n = ndimage.label(lab == 3)
+        clusters = []
+        if n:
+            areas = ndimage.sum(np.ones_like(lb, bool), lb, range(1, n + 1))
+            order = np.argsort(areas)[::-1][:12]
+            cents = ndimage.center_of_mass(lab == 3, lb,
+                                           [int(o) + 1 for o in order])
+            for k, o in enumerate(order):
+                cy, cx = cents[k]
+                px_mm2 = (DS8_UM / 1000.0) ** 2
+                clusters.append(dict(
+                    y=int(round(cy)) * 8, x=int(round(cx)) * 8,
+                    area_mm2=round(float(areas[o]) * px_mm2, 2),
+                    letters=round(float(areas[o]) /
+                                  (cert["letter_height_px"] ** 2), 1)))
+
         a = cert["agreement"]
         c = cert["counts_pct_of_canvas"]
         index.append(dict(
@@ -79,6 +103,8 @@ def main():
             pearson_r=a["highpass_pearson_r"], jaccard=a["jaccard"],
             null=a["jaccard_spatial_null"], enrichment=a["enrichment_over_null"],
             p=a["p_vs_rolled_null"],
+            clusters=clusters,
+            surface_id=f"0139-{seg}",
             registration=cert["registration"].get("measured_this_segment", {}),
             sources=cert["sources"]))
         print(f"{seg}  {base.shape[1]}x{base.shape[0]} (1/{f})  "

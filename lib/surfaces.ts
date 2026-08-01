@@ -50,6 +50,8 @@ function surface(scroll: string, segment: string, file: string): string {
   return `${BUCKET}/${scroll}/segments/${segment}/surface-volumes/${file}`;
 }
 
+import { build0139 } from "./surfaces.generated";
+
 export const SURFACES: SurfaceEntry[] = [
   {
     id: "Paris4-20231005123336-2.4um",
@@ -80,6 +82,12 @@ export const SURFACES: SurfaceEntry[] = [
     note: "Coarse scan of the same segment. Useful for finding your way around the sheet before dropping into the 2.4 µm stack.",
   },
 ];
+
+// The 37 PHerc0139 sheets our cross-scan labels were computed on. Generated
+// rather than hand-written (tools/build_surface_catalog.py) because each entry
+// needs the volume's real level-0 shape, and a wrong shape here would put the
+// viewer somewhere other than where /qc says the disagreement is.
+SURFACES.push(...build0139(surface));
 
 export function findSurface(id: string): SurfaceEntry | undefined {
   return SURFACES.find((s) => s.id === id);
