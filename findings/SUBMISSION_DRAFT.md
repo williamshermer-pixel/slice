@@ -12,8 +12,10 @@ We ran the audit on our own pairs first. It flagged 5 of 28, including one
 two published maps agree on about 59% of each other's calls, which seemed
 worth knowing if you annotate over them.
 
+See where they disagree, no install, any of the 37 segments:
+https://slice-site-alpha.vercel.app/qc
+Method and numbers: https://slice-site-alpha.vercel.app/record
 Repo: https://github.com/williamshermer-pixel/slice
-Viewer (no install): https://slice-site-alpha.vercel.app
 
 The first version of the audit instrument was broken and adversarial review
 caught it before submission. The failure catalog and the positive control that
@@ -41,6 +43,8 @@ of, so the failure mode this issue names is real and measurable in ours too.
 
 Repo: https://github.com/williamshermer-pixel/slice (samples/pairs has two
 committed pairs; the set regenerates from the public bucket in one command.)
+The disagreement map for all 37 segments is browsable at
+https://slice-site-alpha.vercel.app/qc if it is useful to your annotators.
 ```
 
 # Issue comment for villa #193 (paste at github.com/ScrollPrize/villa/issues/193)
@@ -57,5 +61,7 @@ re-annotation is worth the most.
 
 Method, per-segment numbers, and the audit it enables (it flagged 5 of our own
 28 label pairs) are in findings/CROSSENERGY_1667.md at
-https://github.com/williamshermer-pixel/slice, generation tools included.
+https://github.com/williamshermer-pixel/slice, generation tools included. The
+per-segment disagreement maps are browsable at
+https://slice-site-alpha.vercel.app/qc.
 ```

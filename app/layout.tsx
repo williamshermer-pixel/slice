@@ -24,10 +24,22 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Slice — Herculaneum scroll viewer",
+  title: "Slice — Herculaneum ink labels, audited",
   description:
-    "Browser-native viewer for Herculaneum scroll micro-CT volumes. Streams OME-Zarr chunks directly from the Vesuvius Challenge public bucket.",
+    "3D ink label pairs for PHerc0139 with a cross-scan audit: where two scans at different X-ray energies disagree about ink. Plus a browser-native micro-CT viewer.",
 };
+
+/**
+ * Every surface reachable from every page. Without this the site was a CT
+ * viewer with the actual work — the record and the cross-scan QC overlay —
+ * sitting at URLs nobody could discover from the front door.
+ */
+const NAV = [
+  { href: "/qc", label: "Where the scans disagree" },
+  { href: "/record", label: "The record" },
+  { href: "/", label: "CT viewer" },
+  { href: "/lab", label: "Depth lab" },
+];
 
 export default function RootLayout({
   children,
@@ -36,7 +48,34 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${instrumentSerif.variable} ${jetbrainsMono.variable}`}>
-      <body className="bg-void text-papyrus antialiased">{children}</body>
+      <body className="bg-void text-papyrus antialiased">
+        <nav className="border-b border-rule bg-panel/60">
+          <div className="mx-auto flex max-w-[1240px] flex-wrap items-baseline gap-x-5 gap-y-1 px-6 py-2">
+            <a
+              href="/qc"
+              className="font-display text-[15px] tracking-tight text-papyrus"
+            >
+              Slice
+            </a>
+            {NAV.map((n) => (
+              <a
+                key={n.href}
+                href={n.href}
+                className="font-mono text-[11px] uppercase tracking-wider text-ash hover:text-ochre"
+              >
+                {n.label}
+              </a>
+            ))}
+            <a
+              href="https://github.com/williamshermer-pixel/slice"
+              className="ml-auto font-mono text-[11px] uppercase tracking-wider text-ash hover:text-ochre"
+            >
+              repo ↗
+            </a>
+          </div>
+        </nav>
+        {children}
+      </body>
     </html>
   );
 }

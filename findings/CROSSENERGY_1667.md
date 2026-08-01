@@ -1,5 +1,10 @@
 # Cross-energy corroboration on PHerc0139 — a diagnostic, its bugs, and what survived
 
+*Filename note: this file is named for PHerc1667 because the method was built
+there and the July 2026 submission cites the path. The corrected results below
+are PHerc0139 only; 1667 was measured with the defective instrument described
+at the end and its results are withdrawn.*
+
 *2026-07-31, rewritten the same night after two adversarial reviews (a second
 model on the code, a third on the claims) found the first version's instrument
 defective. The bugs, the checks that now guard them, and the corrected numbers
