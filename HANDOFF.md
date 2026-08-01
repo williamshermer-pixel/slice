@@ -63,6 +63,23 @@ chosen once at open and held, so zooming just magnified a 32× downsample); the
 labels panel explains itself instead of vanishing on unlabelled sheets; raw
 scroll volumes removed from the viewer.
 
+## RUN THIS FIRST, BEFORE ANYTHING ELSE
+
+```bash
+python3 tools/positive_control_xe.py && python3 tools/test_crossenergy.py
+```
+
+Both must be green before you trust or change anything. As of the last commit
+the gate reports **13 passed, 1 failed** — check 12, "positive control passed
+and is newer than every tool". That is not a broken pipeline; it is the gate
+correctly noticing that `build_qc_assets.py` and `build_surface_catalog.py`
+were edited after the last control run. Rerunning the control clears it. It
+takes a few minutes.
+
+Leaving it red on purpose rather than committing a stale green: a green gate
+that had stopped meaning anything is the exact failure this whole night was
+about.
+
 ## THE ONE THING TO DO NEXT
 
 `findings/EDGES_AND_SEAMS.md` — William's observation that segments abut
