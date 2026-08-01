@@ -40,6 +40,29 @@ Consequence for where to work: **Scroll 1 is the sheet to develop against.**
 Anything that claims to find or show ink should be demonstrated there first,
 because it is the only place where success is visually unambiguous.
 
+## VIEWER CONTROLS — RESOLVED, WITH ONE CAVEAT
+
+Reported as "fit and out don't work". **They were working the whole time.** A
+surface chunk carries the entire depth stack of a tile, so zooming out is a
+multi-second read and the OLD IMAGE STAYS ON SCREEN until it lands. Click,
+nothing visible, conclude dead button.
+
+Verified 2026-08-01 05:20 on the deployed site: Out took the field from 7.2 mm
+to 14.4 mm (level 3 → 4). Fit sets the full sheet, which is ~900 chunks and
+around 25 seconds on a big segment — slow, not broken.
+
+Fixed: a **reading badge** on the plate showing chunk and MB count while a read
+is in flight, so a slow read looks like a slow read.
+
+A mistake worth not repeating: on first report I "fixed" this by clamping Fit
+and zoom-out to a read budget, which turned a slow button into one that could
+not zoom out at all. Reverted. **Expensive is not the same as broken.**
+
+Also fixed in the same pass: resolution now follows the zoom (the level was
+chosen once at open and held, so zooming just magnified a 32× downsample); the
+labels panel explains itself instead of vanishing on unlabelled sheets; raw
+scroll volumes removed from the viewer.
+
 ## THE ONE THING TO DO NEXT
 
 `findings/EDGES_AND_SEAMS.md` — William's observation that segments abut
@@ -151,6 +174,14 @@ Use it.
   or they hang and read as dead buttons.
 - **Resolution must follow the zoom.** The level was chosen once at open and
   held, so zooming just magnified a 32× downsample. Fixed; keep it.
+- **A slow read is not a broken button.** Always show that a read is in
+  flight. Clamping the view to a budget to make it "responsive" removes the
+  feature instead of fixing the feedback.
+- **Do not test a deploy by grepping the bundle for comments** — production
+  builds strip them, so absence proves nothing. Probe a user-visible string
+  literal, or check the chunk hash changed.
+- **Wait for the 300 ms URL debounce before concluding a control did nothing.**
+  Two "broken" buttons were mis-diagnosed by screenshotting too fast.
 - **Smoke-test one segment before any fleet run.** Two bad null designs died in
   under a minute that way instead of after a 20-minute sweep.
 - **Merge, never overwrite, when writing result JSON.** Re-running one segment

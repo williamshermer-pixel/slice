@@ -526,16 +526,8 @@ export default function SliceViewer() {
         if (!current || !base) return current;
         const cx = current.x + current.width / 2;
         const cy = current.y + current.height / 2;
-        let width = Math.min(base.shape[2], Math.max(32, current.width * factor));
-        let height = Math.min(base.shape[1], Math.max(32, current.height * factor));
-        // Zooming out past what the coarsest level can serve produces a read
-        // that never returns, which reads to a user as a dead button.
-        if (factor > 1 && volumeRef.current) {
-          const ls = volumeRef.current.levels;
-          const cap = fitBudget(ls[ls.length - 1], OPEN_BUDGET_BYTES);
-          width = Math.min(width, cap.width);
-          height = Math.min(height, cap.height);
-        }
+        const width = Math.min(base.shape[2], Math.max(32, current.width * factor));
+        const height = Math.min(base.shape[1], Math.max(32, current.height * factor));
         const nx = Math.max(0, Math.min(cx - width / 2, base.shape[2] - width));
         const ny = Math.max(0, Math.min(cy - height / 2, base.shape[1] - height));
         return { x: nx, y: ny, width, height };
@@ -559,6 +551,9 @@ export default function SliceViewer() {
   const [autoLevel, setAutoLevel] = useState(true);
   useEffect(() => {
     if (!autoLevel || !volume || !box) return;
+    // Finest level within budget; if nothing fits (a whole-sheet view always
+    // costs more than the budget, because a chunk is the entire depth stack)
+    // fall through to the coarsest and let the read run.
     let best = volume.levels.length - 1;
     for (let i = 0; i < volume.levels.length; i++) {
       if (readCost(volume.levels[i], box).bytes <= OPEN_BUDGET_BYTES) {
@@ -855,7 +850,23 @@ export default function SliceViewer() {
             </span>
           </div>
 
-          <div className="plate" style={{ aspectRatio: String(aspect) }}>
+          <div
+            className="plate relative"
+            style={{ aspectRatio: String(aspect) }}
+          >
+            {/* A surface chunk carries the whole depth stack of a tile, so a
+                zoom-out can be a multi-second read. Without a visible sign of
+                that, the old image just sits there and the button reads as
+                dead — which is exactly how Fit and Out were reported broken
+                when they were in fact working. */}
+            {reading && (
+              <div className="pointer-events-none absolute left-2 top-2 z-10 border border-ochre bg-void/85 px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-ochre">
+                reading{cost.chunks ? ` · ${cost.chunks} chunks` : ""}
+                {cost.bytes
+                  ? ` · ${(cost.bytes / 1e6).toFixed(0)} MB`
+                  : ""}
+              </div>
+            )}
             <canvas
               ref={canvasRef}
               onPointerDown={onPointerDown}
@@ -1143,14 +1154,14 @@ export default function SliceViewer() {
                   </button>
                   <button
                     className="btn flex-1"
-                    onClick={() => {
-                      // A surface chunk is the WHOLE depth stack of a tile, so
-                      // the full sheet is a ~385 MB read even at the coarsest
-                      // level and the request simply hangs. Fit to the largest
-                      // view the coarsest level can actually serve.
-                      const coarse = volume.levels[volume.levels.length - 1];
-                      setBox(fitBudget(coarse, OPEN_BUDGET_BYTES));
-                    }}
+                    onClick={() =>
+                      // Fit means the WHOLE sheet. A surface chunk carries the
+                      // full depth stack of a tile, so this is an expensive
+                      // read (~900 chunks, tens of seconds on a big segment) --
+                      // but expensive is not broken, and clamping it to a
+                      // budget turned a slow button into a dead one.
+                      setBox({ x: 0, y: 0, width: base.shape[2], height: base.shape[1] })
+                    }
                   >
                     Fit
                   </button>
