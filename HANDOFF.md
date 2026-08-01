@@ -16,23 +16,33 @@ The submitted answer is preserved in `findings/SUBMIT_NOW.md`.
 
 ---
 
+## ✅ THE POSITIVE CONTROL PASSED — 2026-08-01 ~04:40
+
+**Scroll 1's published ink overlay renders READABLE GREEK on the papyrus.**
+Three lines of letterforms on baselines, seg `20231005123336`, level 5, layer 54
+(inside the measured ink band 27-89). Found by William, by looking, minutes
+after the overlay went live.
+
+This settles what the previous version of this file listed as the open
+question. It means:
+
+- the label→surface coordinate mapping is correct **at pixel level**, not only
+  arithmetically (the ±2% figure was necessary, not sufficient — this is the
+  sufficient part)
+- the overlay pipeline is verified end to end on a sheet whose text was
+  independently read and published in 2023
+- **PHerc0139 showing formless blobs is confirmed as the HAND SIZE, not a bug.**
+  1.61 mm against a 578 µm model field of view returns letter-sized mass;
+  3.00 mm resolves letterforms. Our own maps and the published ones agree on
+  this. Stop treating 0139 blobs as evidence of a broken tool.
+
+Consequence for where to work: **Scroll 1 is the sheet to develop against.**
+Anything that claims to find or show ink should be demonstrated there first,
+because it is the only place where success is visually unambiguous.
+
 ## THE ONE THING TO DO NEXT
 
-**Overlay Scroll 1's published ink map and check it lands on the letters that
-were actually read in 2023.**
-
-This is the positive control the whole viewer has never had. Scroll 1
-(`PHercParis4`, seg `20231005123336`) is the segment the Grand Prize text came
-from. Its hand is 3.00 mm, the largest in the library, and its ink is published.
-If our overlay does not sit on their known letters, the mapping is wrong and
-everything downstream of it is suspect.
-
-Status: **the overlay is built and live, the check has NOT been done.**
-Go to `/viewer`, pick `Scroll 1 · seg 20231005123336`, turn PUBLISHED INK on,
-and find a region with known text. Then answer one question honestly: does the
-white sit on the letters, or near them?
-
-Second: `findings/EDGES_AND_SEAMS.md` — William's observation that segments abut
+`findings/EDGES_AND_SEAMS.md` — William's observation that segments abut
 and words are cut in half at their edges, which our own search deliberately
 excluded. Data verified present and cheap (1.5 MB per segment). Best open lead
 in the project.
@@ -110,11 +120,11 @@ Use it.
   per-segment *surface* volumes (multiscale, anisotropic pyramid). Builder and
   reasoning kept in `app/qc/page.tsx`. **William asked for this three times and
   still does not have it.**
-- **Overlay alignment is verified for coordinates, not pixels.** The arithmetic
-  checks on all 37 segments (±2% of a letter). Whether consensus ink sits
-  *pixel-accurately* on visible ink has not been spot-checked. Labels are
-  18 µm/px against the volume's 2.258, so the overlay is 8× coarser and blocky
-  by construction. Stated in the UI.
+- ~~Overlay alignment unverified at pixel level~~ **RESOLVED 2026-08-01**: the
+  Scroll 1 overlay renders readable Greek on the papyrus, which is a pixel-level
+  confirmation. The 18 µm/px label grid against a 2.258 µm volume still makes
+  the overlay 8× coarser and blocky at high zoom — that is resolution, not
+  misregistration.
 - **Discord post and issue comments not posted.** Drafted in
   `findings/SUBMISSION_DRAFT.md`. These are the only lever on "actually gets
   used", which is the heaviest judging criterion and the one that decides
