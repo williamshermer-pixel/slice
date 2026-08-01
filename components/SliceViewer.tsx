@@ -134,6 +134,23 @@ export default function SliceViewer() {
   const overlayRef = useRef<HTMLCanvasElement>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  /**
+   * Cross-scan label overlay.
+   *
+   * The published ink map is written on this surface volume's own canvas, so a
+   * label pixel maps to the sheet by a pure scale and the overlay needs no
+   * registration: source rect = view box / (8 * png downsample). Verified on
+   * all 37 PHerc0139 segments to within ~2% of a letter.
+   *
+   * Only PHerc0139 sheets have labels; everything else leaves this off and the
+   * control hidden, rather than showing an empty toggle.
+   */
+  const [showLabels, setShowLabels] = useState(true);
+  const [labelAlpha, setLabelAlpha] = useState(0.55);
+  const labelImg = useRef<HTMLImageElement | null>(null);
+  const [labelDs, setLabelDs] = useState<number | null>(null);
+  const [labelSeg, setLabelSeg] = useState<string | null>(null);
   const statsRef = useRef<FetchStats>(newStats());
 
   const catalog = useMemo(() => specimensFor(source), [source]);
@@ -227,6 +244,36 @@ export default function SliceViewer() {
     if (autoLevels && region) setWindow(autoWindow(region.data));
   }, [autoLevels, region]);
 
+  // Fetch the label raster for this sheet, if one exists.
+  useEffect(() => {
+    const seg = specimenId.startsWith("0139-")
+      ? specimenId.slice("0139-".length)
+      : null;
+    labelImg.current = null;
+    setLabelSeg(null);
+    setLabelDs(null);
+    if (!seg || source !== "sheet") return;
+    let cancelled = false;
+    fetch("/qc/index.json")
+      .then((r) => r.json())
+      .then((d: { segments: { segment: string; downsample: number }[] }) => {
+        const entry = d.segments.find((x) => x.segment === seg);
+        if (!entry || cancelled) return;
+        const img = new Image();
+        img.onload = () => {
+          if (cancelled) return;
+          labelImg.current = img;
+          setLabelDs(entry.downsample);
+          setLabelSeg(seg);
+        };
+        img.src = `/qc/${seg}.png`;
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [specimenId, source]);
+
   // Paint.
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -240,7 +287,46 @@ export default function SliceViewer() {
       0,
       0,
     );
-  }, [region, window_, colormap]);
+
+    // Label overlay, drawn on top of the finished slice. The PNG carries the
+    // CODE in its red channel, so recolour into an offscreen buffer first and
+    // composite that -- drawing the raw PNG would paint near-black nonsense.
+    const img = labelImg.current;
+    if (!showLabels || !img || !labelDs || !box || !level) return;
+    const f = 8 * labelDs; // surface level-0 px per label px
+    const sx = box.x / f;
+    const sy = box.y / f;
+    const sw = box.width / f;
+    const sh = box.height / f;
+    if (sw <= 0 || sh <= 0) return;
+
+    const off = document.createElement("canvas");
+    off.width = img.width;
+    off.height = img.height;
+    const oc = off.getContext("2d", { willReadFrequently: true });
+    if (!oc) return;
+    oc.drawImage(img, 0, 0);
+    const src = oc.getImageData(0, 0, img.width, img.height);
+    for (let p = 0; p < src.data.length; p += 4) {
+      const code = src.data[p];
+      const disputed = src.data[p + 1] > 127;
+      if (code === 1) {
+        src.data[p] = 233; src.data[p + 1] = 229; src.data[p + 2] = 219;
+        src.data[p + 3] = 255;
+      } else if (code === 3 || disputed) {
+        src.data[p] = 200; src.data[p + 1] = 151; src.data[p + 2] = 31;
+        src.data[p + 3] = 255;
+      } else {
+        src.data[p + 3] = 0; // blank and unlabelled stay transparent
+      }
+    }
+    oc.putImageData(src, 0, 0);
+    ctx.save();
+    ctx.globalAlpha = labelAlpha;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(off, sx, sy, sw, sh, 0, 0, region.width, region.height);
+    ctx.restore();
+  }, [region, window_, colormap, showLabels, labelAlpha, labelDs, box, level]);
 
   // Mirror the view into the URL.
   useEffect(() => {
@@ -945,6 +1031,48 @@ export default function SliceViewer() {
                   </button>
                 </div>
               </Field>
+
+              {labelSeg && (
+                <Field label="Cross-scan labels">
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      className="btn"
+                      data-active={showLabels}
+                      onClick={() => setShowLabels((v) => !v)}
+                    >
+                      {showLabels ? "On" : "Off"}
+                    </button>
+                    <a className="btn text-center" href="/qc">
+                      Map ↗
+                    </a>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.15}
+                    max={1}
+                    step={0.05}
+                    value={labelAlpha}
+                    onChange={(e) => setLabelAlpha(Number(e.target.value))}
+                    className="mt-2 w-full accent-ochre"
+                    disabled={!showLabels}
+                  />
+                  <p className="caption mt-1 text-[11px]">
+                    <span style={{ color: "#e9e5db" }}>■</span> both scans call
+                    ink · <span style={{ color: "#c8971f" }}>■</span> only one.
+                    Blank and unlabelled are transparent.
+                  </p>
+                  <p className="caption mt-1 text-[11px] text-ash">
+                    Labels are 18 µm/px against this volume&apos;s 2.258, so the
+                    overlay is 8× coarser than the slice and its edges are
+                    blocky by construction, not by misregistration. It is drawn
+                    on the sheet&apos;s own canvas — the grid the ink map was
+                    computed on — so the mapping is a pure scale, verified on
+                    all 37 segments to within ~2% of a letter. Pixel-level
+                    agreement between white and visible ink has not been
+                    spot-checked; treat the overlay as regional, not exact.
+                  </p>
+                </Field>
+              )}
 
               <Field label="Colour ramp">
                 <div className="grid grid-cols-2 gap-1.5">
