@@ -1,94 +1,128 @@
 #!/usr/bin/env python3
-"""Emit lib/surfaces.ts entries for every PHerc0139 segment we have labels for.
+"""Emit lib/surfaces.generated.ts — every sheet that has a published ink map.
 
-Why this is the join. The published ink map is written on the surface volume's
-own canvas: measured, canvas_size == the surface volume's [y, x] at level 0
-(59 keV ds8 map 10501 px wide x8 = 84008, against a canvas_size of 84010). So a
-pixel in our label raster maps to the sheet by a pure scale:
+Reads public/ink-maps.json (tools/build_ink_catalog.py), so the viewer's
+specimen list and the overlay catalog can never drift apart: a sheet appears in
+the picker exactly when there is a map to show on it.
 
-    surface_level0_xy = label_ds8_xy * 8 * png_downsample
+Why this replaced the PHerc0139-only version. The published ink map is written
+on the surface volume's own canvas (`.zattrs:canvas_size`, [x, y] at level 0),
+so a map pixel maps to the sheet by a pure scale and needs no registration. That
+was verified on PHerc0139 and then confirmed at pixel level on Scroll 1, where
+the overlay lands on letterform-shaped marks sitting on baselines. The property
+is not special to PHerc0139, so neither is this catalog.
 
-No registration, no guesswork -- the same grid the labels were computed on.
-That is what lets a click on /qc open the viewer at the papyrus underneath.
+IDS ARE LOAD-BEARING. They go in shareable URLs (`?v=`), so the two legacy id
+shapes are preserved exactly:
 
-    python3 tools/build_surface_catalog.py
+    0139-<14-digit>            the 37 cross-scan sheets
+    Paris4-20231005123336-…    the positive control and its coarse twin
+
+Everything else gets `<scroll>-<14-digit>-<voxel>um`. Changing an existing id
+silently breaks every link anyone has already shared.
+
+    python3 tools/build_ink_catalog.py && python3 tools/build_surface_catalog.py
 """
-import json, os, re, urllib.request
+import json
+import os
+import re
 
-B = "https://vesuvius-challenge-open-data.s3.us-east-1.amazonaws.com"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-UA = {"User-Agent": "Mozilla/5.0"}
-SCROLL = "PHerc0139"
+SRC = os.path.join(ROOT, "public", "ink-maps.json")
+DEST = os.path.join(ROOT, "lib", "surfaces.generated.ts")
+
+# Sheets whose ids predate this generator and appear in shared URLs.
+LEGACY = {
+    ("PHercParis4", "20231005123336", "2.4um-0.22m-78keV-volume-20260411134726.zarr"):
+        "Paris4-20231005123336-2.4um",
+    ("PHercParis4", "20231005123336", "45.532um-11.0m-74keV-volume-20260310170716.zarr"):
+        "Paris4-20231005123336-45um",
+}
+
+SCROLL_LABEL = {
+    "PHercParis4": "Scroll 1",
+    "PHerc0172": "Scroll 5",
+}
+
+NOTES = {
+    "PHercParis4": "Scroll 1 — the 3.00 mm hand, the only sheet in the library "
+                   "where letterforms resolve. The positive control: if an "
+                   "overlay does not land on letters here, it is wrong.",
+    "PHerc0172": "Scroll 5 — two model checkpoints ran on this same volume, so "
+                 "switching between them shows model-vs-model disagreement.",
+    "PHerc0139": "Cross-scan labels exist for this segment — see /qc.",
+}
+DEFAULT_NOTE = ("Published ink detection by Vesuvius Challenge. Move the "
+                "threshold to see what the detector scored below its cutoff.")
 
 
-def get(u):
-    return urllib.request.urlopen(
-        urllib.request.Request(u, headers=UA), timeout=60).read()
-
-
-def listing(prefix, delim="/"):
-    x = get(f"{B}/?list-type=2&prefix={prefix}&max-keys=1000"
-            + (f"&delimiter={delim}" if delim else "")).decode()
-    tag = "Prefix" if delim else "Key"
-    return [p for p in re.findall(rf"<{tag}>([^<]*)</{tag}>", x) if p != prefix]
+def entry_id(e):
+    key = (e["scroll"], e["segment"][:14], e["volume"])
+    if key in LEGACY:
+        return LEGACY[key]
+    if e["scroll"] == "PHerc0139" and "-L1.zarr" in e["volume"]:
+        return f"0139-{e['segment'][:14]}"
+    tag = f"{e['voxelUm']:g}um"
+    if e["volume"].endswith("-L1.zarr"):
+        tag += "-L1"
+    return f"{e['scroll']}-{e['segment'][:14]}-{tag}"
 
 
 def main():
-    idx = json.load(open(os.path.join(ROOT, "public", "qc", "index.json")))
-    want = {s["segment"] for s in idx["segments"]}
-    segs = listing(f"{SCROLL}/segments/")
-    out, misses = [], []
+    doc = json.load(open(SRC))
+    entries = doc["entries"]
 
-    for segpath in segs:
-        full = segpath.rstrip("/").split("/")[-1]
-        short = full[:14]
-        if short not in want:
-            continue
-        vols = listing(f"{segpath}surface-volumes/")
-        # the L1 flattening the 59 keV ink map was computed on
-        pick = [v for v in vols if "1.129um" in v and "-L1.zarr" in v]
-        if not pick:
-            misses.append(short)
-            continue
-        name = pick[0].rstrip("/").split("/")[-1]
-        try:
-            za = json.loads(get(f"{B}/{pick[0]}0/.zarray").decode())
-            shape = za["shape"]
-        except Exception as e:
-            misses.append(f"{short} ({e})")
-            continue
-        out.append(dict(short=short, full=full, name=name, shape=shape))
-        print(f"  {short}  {shape}  {name[:44]}")
+    seen, rows = set(), []
+    for e in entries:
+        eid = entry_id(e)
+        if eid in seen:
+            raise SystemExit(f"duplicate id {eid} — ids go in URLs, fix the rule")
+        seen.add(eid)
+        scroll = e["scroll"]
+        pretty = SCROLL_LABEL.get(scroll, scroll)
+        label = (f"{pretty} · seg {e['segment'][:14]} · {e['voxelUm']:g} µm"
+                 + (" (L1)" if e["volume"].endswith("-L1.zarr") else ""))
+        note = NOTES.get(scroll, DEFAULT_NOTE)
+        rows.append((eid, scroll, e, label, note))
+
+    rows.sort(key=lambda r: (r[1] != "PHercParis4", r[1], r[0]))
 
     ts = []
-    for e in out:
+    for eid, scroll, e, label, note in rows:
+        sh = e["shape"]
         ts.append(f'''  {{
-    id: "0139-{e["short"]}",
-    scroll: "{SCROLL}",
-    segment: "{e["full"]}",
-    label: "PHerc0139 · seg {e["short"]} · 2.258 µm (L1)",
-    url: surface(
-      "{SCROLL}",
-      "{e["full"]}",
-      "{e["name"]}",
-    ),
-    voxelUm: 2.258,
-    shape: [{e["shape"][0]}, {e["shape"][1]}, {e["shape"][2]}],
-    note: "Cross-scan labels exist for this segment — see /qc.",
+    id: {json.dumps(eid)},
+    scroll: {json.dumps(scroll)},
+    segment: {json.dumps(e["segment"])},
+    label: {json.dumps(label)},
+    url: surface({json.dumps(scroll)}, {json.dumps(e["segment"])}, {json.dumps(e["volume"])}),
+    voxelUm: {e["voxelUm"]:g},
+    shape: [{sh[0]}, {sh[1]}, {sh[2]}],
+    note: {json.dumps(note)},
   }},''')
 
-    p = os.path.join(ROOT, "lib", "surfaces.generated.ts")
-    open(p, "w").write(
+    header = (
         "// GENERATED by tools/build_surface_catalog.py — do not edit by hand.\n"
-        "// The 59 keV L1 flattening each PHerc0139 ink map was computed on, so\n"
-        "// label coordinates map to these volumes by a pure scale.\n"
-        "import type { SurfaceEntry } from \"./surfaces\";\n\n"
-        "export function build0139(\n"
+        f"// {len(rows)} sheets across {len(doc['scrolls'])} scrolls: every "
+        "flattened surface volume in\n"
+        "// the public bucket that carries a published ink detection. The map is\n"
+        "// drawn on the volume's own canvas, so overlay placement is a pure "
+        "scale.\n"
+        "//\n"
+        "// Ids appear in shareable URLs. Do not renumber them.\n"
+        'import type { SurfaceEntry } from "./surfaces";\n\n'
+        "export function buildInkSheets(\n"
         "  surface: (scroll: string, segment: string, vol: string) => string,\n"
-        "): SurfaceEntry[] {\n  return [\n" + "\n".join(ts) + "\n  ];\n}\n")
-    print(f"\n{len(out)} segments -> {p}")
-    if misses:
-        print("no usable L1 surface volume:", misses)
+        "): SurfaceEntry[] {\n  return [\n")
+    open(DEST, "w").write(header + "\n".join(ts) + "\n  ];\n}\n")
+
+    by_scroll = {}
+    for _, scroll, *_ in rows:
+        by_scroll[scroll] = by_scroll.get(scroll, 0) + 1
+    for scroll, n in sorted(by_scroll.items()):
+        print(f"  {scroll:14s} {n:3d}")
+    print(f"\n{len(rows)} sheets -> {DEST} "
+          f"({os.path.getsize(DEST)/1e3:.0f} KB)")
 
 
 if __name__ == "__main__":

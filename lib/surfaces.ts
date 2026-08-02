@@ -50,7 +50,7 @@ function surface(scroll: string, segment: string, file: string): string {
   return `${BUCKET}/${scroll}/segments/${segment}/surface-volumes/${file}`;
 }
 
-import { build0139 } from "./surfaces.generated";
+import { buildInkSheets } from "./surfaces.generated";
 
 export const SURFACES: SurfaceEntry[] = [
   {
@@ -83,11 +83,21 @@ export const SURFACES: SurfaceEntry[] = [
   },
 ];
 
-// The 37 PHerc0139 sheets our cross-scan labels were computed on. Generated
-// rather than hand-written (tools/build_surface_catalog.py) because each entry
-// needs the volume's real level-0 shape, and a wrong shape here would put the
-// viewer somewhere other than where /qc says the disagreement is.
-SURFACES.push(...build0139(surface));
+/**
+ * Every flattened sheet in the bucket that carries a published ink detection —
+ * 367 of them across 7 scrolls. Generated rather than hand-written
+ * (tools/build_surface_catalog.py) because each entry needs the volume's real
+ * level-0 shape, and a wrong shape here would put the viewer somewhere other
+ * than where the map says the ink is.
+ *
+ * Appended rather than assigned, and deduped by id, because the entries above
+ * are hand-written for a reason: the 45.5 µm Scroll 1 scan has no ink map of
+ * its own, so the generator cannot see it, but it is the coarse view you use to
+ * find your way around the sheet — and its id is already in shared URLs.
+ */
+const generated = buildInkSheets(surface);
+const held = new Set(SURFACES.map((s) => s.id));
+SURFACES.push(...generated.filter((s) => !held.has(s.id)));
 
 export function findSurface(id: string): SurfaceEntry | undefined {
   return SURFACES.find((s) => s.id === id);

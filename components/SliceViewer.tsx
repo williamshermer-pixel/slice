@@ -34,6 +34,12 @@ import {
 } from "@/lib/colormaps";
 import { exportPng } from "@/lib/export";
 import { encodeGrayTiff, downloadBlob } from "@/lib/tiff";
+import {
+  loadInkCatalog,
+  sheetForVolume,
+  topDecile,
+  type InkSheet,
+} from "@/lib/inkmaps";
 
 type ViewBox = { x: number; y: number; width: number; height: number };
 type Source = "scroll" | "sheet";
@@ -83,15 +89,22 @@ export default function SliceViewer() {
   const seed = useRef(readUrlState(params)).current;
 
   /**
-   * Default to a LABELLED sheet, not a raw scroll.
+   * Default to the sheet where the overlay is UNAMBIGUOUS.
    *
-   * The old default was PHerc. 125 raw — a cross-section in which letters
-   * cannot appear at all by geometry, and which carries no labels, so a first
-   * visit showed a grey blob and none of the work. Land on a PHerc0139 sheet
-   * that has cross-scan labels instead; the raw scrolls are one click away.
+   * Two earlier defaults were wrong in the same way. PHerc. 125 raw is a
+   * cross-section in which letters cannot appear at all by geometry, so a first
+   * visit showed a grey blob. A PHerc0139 sheet is better — it has labels — but
+   * 0139 writes a 1.61 mm hand against a model field of view of 578 µm, so its
+   * overlay is letter-sized mass rather than letterforms, and a first visit
+   * showed blobs that read as a broken tool.
+   *
+   * Scroll 1's control segment is the one sheet in the library with a 3.00 mm
+   * hand, and it is where the overlay was verified landing on letterform-shaped
+   * marks on baselines. Land there: if the first thing a stranger sees is
+   * ambiguous, everything after it reads as ambiguous too.
    */
   const DEFAULT_SOURCE: Source = "sheet";
-  const DEFAULT_SPECIMEN = "0139-20260302000001";
+  const DEFAULT_SPECIMEN = "Paris4-20231005123336-2.4um";
   const [source] = useState<Source>("sheet");
   const [specimenId, setSpecimenId] = useState(
     seed.specimenId ??
@@ -149,15 +162,16 @@ export default function SliceViewer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   /**
-   * Cross-scan label overlay.
+   * Ink overlay.
    *
-   * The published ink map is written on this surface volume's own canvas, so a
-   * label pixel maps to the sheet by a pure scale and the overlay needs no
-   * registration: source rect = view box / (8 * png downsample). Verified on
-   * all 37 PHerc0139 segments to within ~2% of a letter.
+   * The map is written on this surface volume's own canvas, so a map pixel maps
+   * to the sheet by a pure scale and the overlay needs no registration. The
+   * scale is measured per sheet (`canvas[0] / image.width`), never assumed: the
+   * true factor is 8.0006, and baking 8 drifts the overlay about a letter width
+   * across a 30,000-pixel sheet.
    *
-   * Only PHerc0139 sheets have labels; everything else leaves this off and the
-   * control hidden, rather than showing an empty toggle.
+   * Verified at pixel level on Scroll 1, where the overlay lands on
+   * letterform-shaped marks sitting on baselines.
    */
   const [showLabels, setShowLabels] = useState(true);
   const [labelAlpha, setLabelAlpha] = useState(0.55);
@@ -165,16 +179,39 @@ export default function SliceViewer() {
    * The recoloured overlay is cached. Rebuilding it inside the paint effect
    * meant recolouring up to 2M pixels on every pan, zoom, window and colormap
    * change, which made the overlay visibly lag in and out. It depends only on
-   * the label raster, so it is built once per segment.
+   * the raster and the threshold, so it is rebuilt only when those change.
    */
   const labelCanvas = useRef<HTMLCanvasElement | null>(null);
-  const labelDsRef = useRef<number | null>(null);
+  /** Surface level-0 px per overlay px. Measured, not assumed. */
+  const labelScaleRef = useRef<number | null>(null);
+  /** The raw published scores, kept so the threshold can move without refetching. */
+  const inkRawRef = useRef<ImageData | null>(null);
   /** Always changes when a raster is (un)loaded, so the paint effect re-runs
-   *  even when two segments happen to share a downsample factor. */
+   *  even when two sheets happen to share a scale factor. */
   const [labelVersion, setLabelVersion] = useState(0);
   const [labelSeg, setLabelSeg] = useState<string | null>(null);
   const [labelKind, setLabelKind] =
     useState<"cross-scan" | "published" | null>(null);
+  /**
+   * Which model's map, when a sheet carries more than one. PHerc0172 is the
+   * reason this exists: two checkpoints ran on the same volume, so switching
+   * between them shows model-vs-model disagreement rather than energy-vs-energy.
+   */
+  const [inkSheet, setInkSheet] = useState<InkSheet | null>(null);
+  const [mapIndex, setMapIndex] = useState(0);
+  /**
+   * Score cutoff, 0–255. Defaults to the top decile of the sheet's own non-zero
+   * scores, which is the cutoff the Scroll 1 positive control passed at.
+   *
+   * The point of making it movable: these maps are continuous, not binarised —
+   * 244 distinct values on the sheet I measured. Everything below a publication
+   * cutoff is real model output that nobody looks at, and telling "no ink" from
+   * "no ink recovered yet" is an open problem in their own docs. Lowering this
+   * is how you see the difference. It is also how you fool yourself, so the
+   * readout always says how far below the default you have gone.
+   */
+  const [inkThreshold, setInkThreshold] = useState<number | null>(null);
+  const [inkDefault, setInkDefault] = useState<number | null>(null);
   const statsRef = useRef<FetchStats>(newStats());
 
   const catalog = useMemo(() => specimensFor(source), [source]);
@@ -272,101 +309,164 @@ export default function SliceViewer() {
     if (autoLevels && region) setWindow(autoWindow(region.data));
   }, [autoLevels, region]);
 
-  // Fetch the label raster for this sheet, if one exists, and recolour it once.
+  /**
+   * Which overlays exist for this sheet.
+   *
+   *   published   Vesuvius Challenge's own ink detection, read straight from
+   *               their bucket. 367 sheets across 7 scrolls. Continuous scores,
+   *               so the cutoff is a control rather than a constant.
+   *   cross-scan  ours — PHerc0139 only, 37 segments with maps at two energies,
+   *               so the raster carries agree / disagree / silent.
+   *
+   * Published is the default wherever it exists, because it is the thing being
+   * shown; cross-scan is a second opinion on top of it.
+   */
+  const [hasCrossScan, setHasCrossScan] = useState(false);
   useEffect(() => {
-    labelCanvas.current = null;
-    labelDsRef.current = null;
-    setLabelSeg(null);
-    setLabelKind(null);
-    setLabelVersion((v) => v + 1);
-    if (source !== "sheet") return;
+    setInkSheet(null);
+    setHasCrossScan(false);
+    setMapIndex(0);
+    setInkThreshold(null);
+    setInkDefault(null);
+    if (source !== "sheet" || !specimen) return;
     let cancelled = false;
-
-    /**
-     * Two kinds of overlay.
-     *
-     *   cross-scan  PHerc0139 only — 37 segments with maps at two energies,
-     *               so the raster carries agree / disagree / silent.
-     *   published   Scroll 1 — the best sheet in the library (3.00 mm hand,
-     *               where letterforms actually resolve) but only ONE usable
-     *               energy, so there is nothing to cross-check. This is the
-     *               project's published detection on its own, and it is the
-     *               positive control: if our overlay does not land on the
-     *               letters that were read from this sheet in 2023, the
-     *               machinery is wrong.
-     */
-    const load = (
-      url: string,
-      ds: number,
-      seg: string,
-      kind: "cross-scan" | "published",
-    ) => {
-      const img = new Image();
-      img.onload = () => {
-        if (cancelled) return;
-        const off = document.createElement("canvas");
-        off.width = img.width;
-        off.height = img.height;
-        const oc = off.getContext("2d", { willReadFrequently: true });
-        if (!oc) return;
-        oc.drawImage(img, 0, 0);
-        const px = oc.getImageData(0, 0, img.width, img.height);
-        for (let p = 0; p < px.data.length; p += 4) {
-          const code = px.data[p];
-          const disputed = px.data[p + 1] > 127;
-          if (code === 1) {
-            px.data[p] = 233; px.data[p + 1] = 229; px.data[p + 2] = 219;
-            px.data[p + 3] = 255;
-          } else if (code === 3 || disputed) {
-            px.data[p] = 200; px.data[p + 1] = 151; px.data[p + 2] = 31;
-            px.data[p + 3] = 255;
-          } else {
-            px.data[p + 3] = 0;
-          }
-        }
-        oc.putImageData(px, 0, 0);
-        labelCanvas.current = off;
-        labelDsRef.current = ds;
-        setLabelSeg(seg);
-        setLabelKind(kind);
-        setLabelVersion((v) => v + 1);
-      };
-      img.src = url;
-    };
-
-    if (specimenId === "Paris4-20231005123336-2.4um") {
-      fetch("/qc/scroll1.json")
-        .then((r) => r.json())
-        .then((d: { downsample: number; segment: string }) => {
-          if (cancelled) return;
-          // scroll1.json stores the FULL factor (png px -> surface level 0),
-          // while the 0139 index stores the ds8 factor, so divide by 8 here to
-          // keep one convention downstream.
-          load(`/qc/scroll1-${d.segment}.png`, d.downsample / 8, d.segment,
-               "published");
-        })
-        .catch(() => undefined);
-      return () => {
-        cancelled = true;
-      };
-    }
-
+    loadInkCatalog().then((cat) => {
+      if (cancelled) return;
+      setInkSheet(sheetForVolume(cat, specimen.url) ?? null);
+    });
     const seg = specimenId.startsWith("0139-")
       ? specimenId.slice("0139-".length)
       : null;
-    if (!seg) return;
-    fetch("/qc/index.json")
-      .then((r) => r.json())
-      .then((d: { segments: { segment: string; downsample: number }[] }) => {
-        const entry = d.segments.find((x) => x.segment === seg);
-        if (!entry || cancelled) return;
-        load(`/qc/${seg}.png`, entry.downsample, seg, "cross-scan");
-      })
-      .catch(() => undefined);
+    if (seg) {
+      fetch("/qc/index.json")
+        .then((r) => r.json())
+        .then((d: { segments: { segment: string }[] }) => {
+          if (!cancelled) {
+            setHasCrossScan(d.segments.some((x) => x.segment === seg));
+          }
+        })
+        .catch(() => undefined);
+    }
     return () => {
       cancelled = true;
     };
-  }, [specimenId, source]);
+  }, [specimenId, source, specimen]);
+
+  /** Default to theirs when it exists, ours when it does not. */
+  useEffect(() => {
+    setLabelKind(inkSheet ? "published" : hasCrossScan ? "cross-scan" : null);
+  }, [inkSheet, hasCrossScan]);
+
+  // Fetch the raster for the selected overlay and hold it un-thresholded.
+  useEffect(() => {
+    labelCanvas.current = null;
+    labelScaleRef.current = null;
+    inkRawRef.current = null;
+    setLabelSeg(null);
+    setLabelVersion((v) => v + 1);
+    if (source !== "sheet" || !labelKind) return;
+    let cancelled = false;
+
+    const map =
+      labelKind === "published" ? inkSheet?.maps[mapIndex] : undefined;
+    const seg =
+      labelKind === "published"
+        ? inkSheet?.segment
+        : specimenId.slice("0139-".length);
+    const url =
+      labelKind === "published" ? map?.url : `/qc/${seg}.png`;
+    if (!url || !seg) return;
+
+    const img = new Image();
+    // Their bucket sends `Access-Control-Allow-Origin: *`, but a canvas read of
+    // a cross-origin image taints it unless the request is explicitly CORS.
+    // Without this, getImageData throws and the overlay silently never appears.
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      if (cancelled) return;
+      const off = document.createElement("canvas");
+      off.width = img.width;
+      off.height = img.height;
+      const oc = off.getContext("2d", { willReadFrequently: true });
+      if (!oc) return;
+      oc.drawImage(img, 0, 0);
+      const px = oc.getImageData(0, 0, img.width, img.height);
+      inkRawRef.current = px;
+      // Measured, not assumed. For their maps the sheet's canvas width is known
+      // from the volume metadata; for our cross-scan PNGs the raster is written
+      // on the same canvas, so the same division holds.
+      const canvasX = inkSheet?.canvas?.[0] ?? specimen.shape[2];
+      labelScaleRef.current = canvasX / img.width;
+      if (labelKind === "published") {
+        const d = topDecile(px.data);
+        setInkDefault(d);
+        setInkThreshold(d);
+      }
+      setLabelSeg(seg);
+      setLabelVersion((v) => v + 1);
+    };
+    img.src = url;
+    return () => {
+      cancelled = true;
+    };
+  }, [labelKind, inkSheet, mapIndex, specimenId, source, specimen]);
+
+  /**
+   * Recolour at the current cutoff.
+   *
+   * Split from the fetch so moving the threshold does not refetch a 570 KB map,
+   * and split from the paint effect so panning does not recolour 2M pixels.
+   */
+  useEffect(() => {
+    const px = inkRawRef.current;
+    if (!px) return;
+    const out = new ImageData(
+      new Uint8ClampedArray(px.data),
+      px.width,
+      px.height,
+    );
+    const d = out.data;
+    if (labelKind === "cross-scan") {
+      // Our raster stores a CODE in red (0 unlabelled / 1 ink / 2 blank /
+      // 3 disputed) and a downsample-safe disputed flag in green.
+      for (let p = 0; p < d.length; p += 4) {
+        const code = d[p];
+        const disputed = d[p + 1] > 127;
+        if (code === 1) {
+          d[p] = 233; d[p + 1] = 229; d[p + 2] = 219; d[p + 3] = 255;
+        } else if (code === 3 || disputed) {
+          d[p] = 200; d[p + 1] = 151; d[p + 2] = 31; d[p + 3] = 255;
+        } else {
+          d[p + 3] = 0;
+        }
+      }
+    } else {
+      // Their raster is a continuous score. At or above the cutoff reads as
+      // papyrus white; below the default cutoff but above the current one reads
+      // ochre, so relaxing the threshold shows you exactly what you added
+      // rather than quietly enlarging the white.
+      const t = inkThreshold ?? 255;
+      const base = inkDefault ?? t;
+      for (let p = 0; p < d.length; p += 4) {
+        const v = d[p];
+        if (v >= base) {
+          d[p] = 233; d[p + 1] = 229; d[p + 2] = 219; d[p + 3] = 255;
+        } else if (v >= t) {
+          d[p] = 200; d[p + 1] = 151; d[p + 2] = 31; d[p + 3] = 255;
+        } else {
+          d[p + 3] = 0;
+        }
+      }
+    }
+    const off = document.createElement("canvas");
+    off.width = px.width;
+    off.height = px.height;
+    const oc = off.getContext("2d");
+    if (!oc) return;
+    oc.putImageData(out, 0, 0);
+    labelCanvas.current = off;
+    setLabelVersion((v) => v + 1);
+  }, [labelKind, inkThreshold, inkDefault, labelSeg]);
 
   // Paint.
   useEffect(() => {
@@ -386,17 +486,62 @@ export default function SliceViewer() {
     // a pure scale: the ink map is written on this volume's own canvas, so
     // there is nothing to register.
     const lc = labelCanvas.current;
-    const ds = labelDsRef.current;
-    if (!showLabels || !lc || !ds || !box) return;
-    const f = 8 * ds; // surface level-0 px per label px
+    const f = labelScaleRef.current; // surface level-0 px per overlay px
+    if (!showLabels || !lc || !f || !box) return;
     const sx = box.x / f;
     const sy = box.y / f;
     const sw = box.width / f;
     const sh = box.height / f;
     if (sw <= 0 || sh <= 0) return;
+
+    /**
+     * How far the ds8 overlay is being stretched: destination pixels per
+     * overlay pixel. Below 1 it is shrinking, above 1 it is being magnified
+     * past its own resolution. Both fixes below key off this.
+     */
+    const scale = sw > 0 ? region.width / sw : 1;
+
+    /**
+     * Knock the papyrus back before drawing ink on it, harder the closer you get.
+     *
+     * Without any dimming the overlay is invisible in practice: a CT slice of
+     * Scroll 1 is near-white and extremely busy, and the ink is drawn in
+     * papyrus white — the same value as the loudest thing underneath.
+     *
+     * A FIXED dim is then wrong at one end. At a wide field the CT is soft
+     * texture and 62% is plenty. Zoomed in, the viewer switches to a finer
+     * pyramid level and the fibre weave becomes high-contrast detail at the
+     * same spatial frequency as the letters, so the ink needs more separation.
+     * Ramp 0.62 -> 0.80 as the overlay is magnified.
+     *
+     * Dimming the base rather than brightening the ink keeps the design rule
+     * that the specimen is the only bright thing: the papyrus stays the
+     * specimen, it just steps back to substrate while ink is on top.
+     */
+    const dim = Math.min(0.8, 0.62 + 0.06 * Math.max(0, Math.log2(scale)));
+    ctx.save();
+    ctx.fillStyle = `rgba(10, 10, 11, ${dim.toFixed(3)})`;
+    ctx.fillRect(0, 0, region.width, region.height);
+    ctx.restore();
+
+    /**
+     * Smooth the overlay only when it is being MAGNIFIED past its resolution.
+     *
+     * Zoomed out the overlay is downscaled and nearest-neighbour is right: it
+     * keeps calls crisp and invents no ink between pixels. Zoomed in,
+     * nearest-neighbour shatters letterforms into hard 8-pixel blocks exactly
+     * as the CT underneath sharpens — so letters that are unmistakable on the
+     * whole sheet dissolve as you go closer, which is backwards from what
+     * zooming is for.
+     *
+     * Interpolating a known-coarse source is honest smoothing, not fabricated
+     * detail: the readout still reports the map as ds8 and the note under the
+     * control still says treat the overlay as regional, not exact.
+     */
     ctx.save();
     ctx.globalAlpha = labelAlpha;
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = scale > 1;
+    if (scale > 1) ctx.imageSmoothingQuality = "high";
     ctx.drawImage(lc, sx, sy, sw, sh, 0, 0, region.width, region.height);
     ctx.restore();
   }, [region, window_, colormap, showLabels, labelAlpha, labelVersion, box]);
@@ -521,20 +666,69 @@ export default function SliceViewer() {
   }, [maskVersion]);
 
   const zoom = useCallback(
-    (factor: number) => {
+    (factor: number, anchor?: [number, number]) => {
       setBox((current) => {
         if (!current || !base) return current;
-        const cx = current.x + current.width / 2;
-        const cy = current.y + current.height / 2;
-        const width = Math.min(base.shape[2], Math.max(32, current.width * factor));
-        const height = Math.min(base.shape[1], Math.max(32, current.height * factor));
-        const nx = Math.max(0, Math.min(cx - width / 2, base.shape[2] - width));
-        const ny = Math.max(0, Math.min(cy - height / 2, base.shape[1] - height));
+        // Anchor: 0..1 across the current view. 0.5,0.5 is the centre; the
+        // wheel and double-click pass the cursor so the thing under the
+        // pointer stays under the pointer, which is the whole of what makes a
+        // map feel controllable.
+        const ax = anchor ? anchor[0] : 0.5;
+        const ay = anchor ? anchor[1] : 0.5;
+        const px = current.x + current.width * ax;
+        const py = current.y + current.height * ay;
+        /**
+         * Scale BOTH axes by one factor.
+         *
+         * This used to clamp width and height independently against the sheet,
+         * which quietly destroyed the aspect ratio: Scroll 1 is 97280 x 34880,
+         * so zooming out pinned the height at 34880 while the width kept
+         * doubling, and every further click stretched the view into a longer
+         * letterbox. That is what "Out is crazy" was — not a dead button, a
+         * button that deformed the picture a little more each press.
+         *
+         * So the clamp is a single scalar applied to both axes. The box shape
+         * is invariant under zoom; only its size changes.
+         */
+        let width = current.width * factor;
+        let height = current.height * factor;
+        /**
+         * Zooming out ends at the whole sheet, not at a wall.
+         *
+         * Clamping the scalar instead would freeze the box the moment its
+         * FIRST axis saturated — on a 1400x1160 sheet a 2:1 view sticks at
+         * 1400 wide with 460 rows it can never reach, and Out becomes a button
+         * that does nothing. Since the canvas letterboxes now, a box that does
+         * not match the plate's shape costs nothing, so the honest terminal
+         * state is the sheet itself.
+         */
+        if (width >= base.shape[2] || height >= base.shape[1]) {
+          return { x: 0, y: 0, width: base.shape[2], height: base.shape[1] };
+        }
+        const grow = Math.max(1, 32 / width, 32 / height);
+        width *= grow;
+        height *= grow;
+        // Keep the anchored point where it was on screen, then keep the box on
+        // the sheet.
+        const nx = Math.max(0, Math.min(px - width * ax, base.shape[2] - width));
+        const ny = Math.max(0, Math.min(py - height * ay, base.shape[1] - height));
         return { x: nx, y: ny, width, height };
       });
     },
     [base],
   );
+
+  /** Where the pointer is, as a 0..1 fraction of the plate. */
+  const anchorFrom = useCallback((e: { clientX: number; clientY: number }) => {
+    const c = canvasRef.current;
+    if (!c) return undefined;
+    const r = c.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return undefined;
+    return [
+      Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
+      Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)),
+    ] as [number, number];
+  }, []);
 
   /**
    * Resolution follows the zoom.
@@ -776,9 +970,22 @@ export default function SliceViewer() {
   };
 
   // Zoom is disabled while a label frame is open — see `labelFrame`.
+  /**
+   * Wheel zooms AT THE CURSOR, not at the centre of the view.
+   *
+   * Centre-anchored zoom is why this felt uncontrollable: you point at a word,
+   * scroll, and the word leaves the screen. Anchoring to the pointer is the
+   * one behaviour every map has, and it costs four lines.
+   */
   const onWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     if (labelling) return;
-    zoom(e.deltaY > 0 ? 1.25 : 0.8);
+    zoom(e.deltaY > 0 ? 1.25 : 0.8, anchorFrom(e));
+  };
+
+  /** Double-click zooms in on what you clicked. */
+  const onDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (labelling || profileMode) return;
+    zoom(0.5, anchorFrom(e));
   };
 
   const copyLink = async () => {
@@ -867,6 +1074,14 @@ export default function SliceViewer() {
                   : ""}
               </div>
             )}
+            {/*
+              Letterbox, never stretch. `h-full w-full` forced every read into
+              the plate's aspect regardless of the box's, so a wide sheet was
+              squashed vertically and the papyrus weave sheared. A canvas is a
+              replaced element with an intrinsic size, so max-* with auto
+              width/height scales it down to fit and keeps the ratio — which is
+              what lets Fit mean the whole sheet without deforming it.
+            */}
             <canvas
               ref={canvasRef}
               onPointerDown={onPointerDown}
@@ -875,7 +1090,8 @@ export default function SliceViewer() {
               onPointerCancel={onPointerUp}
               onPointerLeave={() => setCursor(null)}
               onWheel={onWheel}
-              className="block h-full w-full touch-none select-none"
+              onDoubleClick={onDoubleClick}
+              className="m-auto block max-h-full max-w-full touch-none select-none"
               style={{
                 imageRendering: "pixelated",
                 cursor: labelling
@@ -895,6 +1111,54 @@ export default function SliceViewer() {
                 className="pointer-events-none absolute inset-0 z-[2] h-full w-full"
                 style={{ imageRendering: "pixelated" }}
               />
+            )}
+
+            {/*
+              Navigation belongs ON the map.
+              Zoom lived in a right-hand sidebar next to a dozen scientific
+              readouts, so moving around the papyrus meant leaving the papyrus.
+              These are the same actions as the sidebar buttons, put where a
+              hand already is. The sidebar copies stay for keyboard//precision
+              use; this is the one you reach for.
+            */}
+            {status === "ready" && base && (
+              <div className="absolute bottom-3 right-3 z-10 flex flex-col overflow-hidden border border-rule bg-void/85">
+                <button
+                  className="px-2.5 py-1.5 font-mono text-sm text-papyrus hover:bg-panel"
+                  onClick={() => zoom(0.5)}
+                  title="Zoom in — or scroll / double-click on the plate"
+                  aria-label="Zoom in"
+                >
+                  +
+                </button>
+                <button
+                  className="border-t border-rule px-2.5 py-1.5 font-mono text-sm text-papyrus hover:bg-panel"
+                  onClick={() => zoom(2)}
+                  title="Zoom out — or scroll down on the plate"
+                  aria-label="Zoom out"
+                >
+                  −
+                </button>
+                <button
+                  className="border-t border-rule px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-ash hover:bg-panel hover:text-papyrus"
+                  onClick={() =>
+                    setBox({ x: 0, y: 0, width: base.shape[2], height: base.shape[1] })
+                  }
+                  title="Whole sheet — a large read, it will take a moment"
+                  aria-label="Fit whole sheet"
+                >
+                  fit
+                </button>
+              </div>
+            )}
+
+            {/* Bottom-CENTRE: the scale bar owns bottom-left and the zoom
+                controls own bottom-right, and this sat on top of the scale
+                bar when it was put in the corner. */}
+            {status === "ready" && (
+              <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap font-mono text-[10px] uppercase tracking-wider text-ash/70">
+                drag to move · scroll to zoom · double-click to zoom in
+              </div>
             )}
 
             {/* How big a letter actually is, at this zoom. Without a reference
@@ -974,18 +1238,23 @@ export default function SliceViewer() {
             />
           </div>
 
-          {/* Can this scan hold ink at all? The letter is never the problem —
-              347 voxels tall even on the coarsest scroll. The ink LAYER is
-              ~15 um, and at 8.64 um sampling that is 1.7 voxels, under the ~3
-              needed to resolve anything. Better to say so than to let someone
-              spend a month hunting a signal the scan never recorded. */}
+          {/* Is this scan inside the bar this project sets for itself? The
+              letter is never the problem — 347 voxels tall even on the coarsest
+              scroll. The ink LAYER is ~15 um, which at 8.64 um is 1.7 voxels,
+              under the ~3 we require before trusting our own cross-scan work.
+              CORRECTED 2026-08-02 (villa PR #1295): this used to read as though
+              a coarse scan meant the ink "was never recorded". It does not —
+              PHerc0172 sits at 1.9 voxels and its title has been read. Say what
+              WE will assert, not what the data supposedly cannot hold. */}
           {res.verdict !== "resolved" && status === "ready" && (
             <p className="mt-3 border border-ochre/40 bg-ochre/5 px-3 py-2 font-mono text-[11px] text-ochre">
               Ink layer is ~{HAND.inkLayerUm} µm — {res.inkVoxels.toFixed(1)} voxels at
               this scan&apos;s {specimen.voxelUm} µm sampling, below the ~3 needed to
               resolve a feature. A letter here is {Math.round(res.letterVoxels).toLocaleString()} voxels,
-              so size is not the limit — the ink is under-sampled, not faint. Scroll 1
-              gets 6.2 voxels through the same layer, which is why it could be read.
+              so size is not the limit — the ink layer is under-sampled at this
+              scan. Scroll 1 gets 6.2 voxels through the same layer. This is a bar on
+              what this tool will claim, not a verdict on the scroll: ink has been
+              published on scrolls below it.
             </p>
           )}
 
@@ -1168,29 +1437,23 @@ export default function SliceViewer() {
                 </div>
               </Field>
 
-              {!labelSeg && (
-                <Field label="Cross-scan labels">
+              {!labelSeg && !inkSheet && !hasCrossScan && (
+                <Field label="Ink overlay">
                   <p className="caption text-[11px]">
-                    No cross-scan labels for this sheet. They exist for the 37
-                    PHerc0139 segments that were scanned at two energies.
+                    No published ink detection for this sheet. There are 367
+                    sheets across 7 scrolls that have one.
                   </p>
                   <button
                     className="btn mt-2 w-full"
                     onClick={() => setSpecimenId(DEFAULT_SPECIMEN)}
                   >
-                    Go to a labelled sheet
+                    Go to a sheet with ink
                   </button>
                 </Field>
               )}
 
               {labelSeg && (
-                <Field
-                  label={
-                    labelKind === "published"
-                      ? "Published ink"
-                      : "Cross-scan labels"
-                  }
-                >
+                <Field label="Ink overlay">
                   <div className="grid grid-cols-2 gap-1.5">
                     <button
                       className="btn"
@@ -1203,6 +1466,46 @@ export default function SliceViewer() {
                       Map ↗
                     </a>
                   </div>
+
+                  {/* Whose overlay. Visible buttons, not a dropdown — this is a
+                      primary choice, and the two are not the same claim. */}
+                  {inkSheet && hasCrossScan && (
+                    <div className="mt-2 grid grid-cols-2 gap-1.5">
+                      <button
+                        className="btn"
+                        data-active={labelKind === "published"}
+                        onClick={() => setLabelKind("published")}
+                      >
+                        Theirs
+                      </button>
+                      <button
+                        className="btn"
+                        data-active={labelKind === "cross-scan"}
+                        onClick={() => setLabelKind("cross-scan")}
+                      >
+                        Ours
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Two checkpoints on one volume: PHerc0172's 53 sheets. */}
+                  {labelKind === "published" && inkSheet &&
+                    inkSheet.maps.length > 1 && (
+                      <div className="mt-2 grid gap-1.5">
+                        {inkSheet.maps.map((m, i) => (
+                          <button
+                            key={m.url}
+                            className="btn truncate text-left"
+                            data-active={i === mapIndex}
+                            onClick={() => setMapIndex(i)}
+                            title={m.model}
+                          >
+                            {m.model.replace(/^\d+-/, "")}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                   <input
                     type="range"
                     min={0.15}
@@ -1213,38 +1516,86 @@ export default function SliceViewer() {
                     className="mt-2 w-full accent-ochre"
                     disabled={!showLabels}
                   />
-                  <p className="caption mt-1 text-[11px]">
+
+                  {labelKind === "published" && inkThreshold !== null &&
+                    inkDefault !== null && (
+                      <>
+                        <div className="ledger-row mt-2">
+                          <span>SCORE CUTOFF</span>
+                          <span className="tabular-nums">
+                            {inkThreshold}
+                            {inkThreshold < inkDefault && (
+                              <span className="text-ochre">
+                                {" "}
+                                −{inkDefault - inkThreshold}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min={1}
+                          max={255}
+                          step={1}
+                          value={inkThreshold}
+                          onChange={(e) =>
+                            setInkThreshold(Number(e.target.value))
+                          }
+                          className="mt-1 w-full accent-ochre"
+                          disabled={!showLabels}
+                        />
+                        <p className="caption mt-1 text-[11px] text-ash">
+                          Default {inkDefault} is the top decile of this
+                          sheet&apos;s own scores — the cutoff the Scroll 1
+                          control passed at. Lower it and{" "}
+                          <span style={{ color: "#c8971f" }}>■</span> marks what
+                          you added, so a relaxed threshold cannot quietly grow
+                          the white. Below the default is model output nobody
+                          publishes; it is also where you will fool yourself.
+                        </p>
+                      </>
+                    )}
+
+                  <p className="caption mt-2 text-[11px]">
                     {labelKind === "published" ? (
                       <>
                         <strong className="text-ochre">
                           NOT OUR DETECTION.
                         </strong>{" "}
-                        <span style={{ color: "#e9e5db" }}>■</span> is
-                        ScrollPrize&apos;s own published ink map for this sheet,
-                        downloaded from their bucket and drawn on the papyrus.
-                        We did not detect this ink, did not read it, and
-                        contributed nothing to it. It is here as a{" "}
-                        <em className="font-display">positive control</em>: if
-                        their known ink lands where we draw it, our coordinates
-                        are right. That is the only claim being made.
+                        <span style={{ color: "#e9e5db" }}>■</span> is Vesuvius
+                        Challenge&apos;s own published ink map, read live from
+                        their public bucket and drawn on the papyrus. We did not
+                        detect this ink, did not read it, and contributed
+                        nothing to it. This viewer shows it; it does not claim
+                        it.
                       </>
                     ) : (
                       <>
                         <span style={{ color: "#e9e5db" }}>■</span> both scans
                         call ink · <span style={{ color: "#c8971f" }}>■</span>{" "}
-                        only one. Blank and unlabelled are transparent.
+                        only one. Blank and unlabelled are transparent. This one
+                        is ours — a cross-scan comparison of their two published
+                        maps, not a detection of our own.
                       </>
                     )}
                   </p>
+
+                  {labelKind === "published" && inkSheet && (
+                    <p className="caption mt-1 text-[11px] text-ash">
+                      Model{" "}
+                      <span className="text-papyrus">
+                        {inkSheet.maps[mapIndex]?.model}
+                      </span>
+                      . Scroll data CC BY-NC 4.0, © Vesuvius Challenge.
+                    </p>
+                  )}
+
                   <p className="caption mt-1 text-[11px] text-ash">
-                    Labels are 18 µm/px against this volume&apos;s 2.258, so the
-                    overlay is 8× coarser than the slice and its edges are
-                    blocky by construction, not by misregistration. It is drawn
-                    on the sheet&apos;s own canvas — the grid the ink map was
-                    computed on — so the mapping is a pure scale, verified on
-                    all 37 segments to within ~2% of a letter. Pixel-level
-                    agreement between white and visible ink has not been
-                    spot-checked; treat the overlay as regional, not exact.
+                    The map is drawn on this sheet&apos;s own canvas — the grid
+                    it was computed on — so placement is a pure scale, measured
+                    per sheet rather than assumed. It is 8× coarser than the
+                    slice, so its edges are blocky by construction, not by
+                    misregistration. Treat the overlay as regional, not exact.
                   </p>
                 </Field>
               )}
