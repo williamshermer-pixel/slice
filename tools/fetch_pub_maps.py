@@ -12,7 +12,18 @@ only counts if it can sample a 15 um ink layer at 3+ voxels, so the 9.362 um
     PHerc0343P  one usable scan only                       -- no pair
     PHerc0500P2 one usable scan only                       -- no pair
     PHercParis4 two scans but BOTH 78 keV                  -- not independent
-    PHerc0172   no ink-detection maps                      -- physics control
+    PHerc0172   one scan, 7.91 um                          -- fails the physics
+
+CORRECTION 2026-08-01. This list previously said PHerc0172 had "no
+ink-detection maps -- physics control". That is false and was never true: 0172
+has 53 segments with published maps, 106 of them, because TWO model checkpoints
+(timesformer_scroll5_july_retreat and _november19) ran on the same 7.91 um
+volume. It is excluded here for the reason stated above -- one scan, so no
+energy pair -- not for want of maps.
+
+Worth not losing: two checkpoints on one volume is a MODEL-vs-model comparison,
+which is a different instrument from the energy-vs-energy one this file feeds,
+and nothing in this project has used it. See public/ink-maps.json.
 
 The proxy WAF 403s python-urllib's user agent, so this spoofs a browser UA.
 Files already held are never refetched -- a failed refetch once deleted 42

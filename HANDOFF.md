@@ -1,8 +1,161 @@
 # HANDOFF — read this first
 
-*Rewritten 2026-08-01 ~04:15, at the end of the night the July submission went
-in. Everything above the "PRIOR HISTORY" line is current. Where they conflict,
-this block wins.*
+*Updated 2026-08-02. The 2026-08-01 block below is still true; this section
+sits on top of it and wins where they conflict.*
+
+---
+
+# 2026-08-02 — THE NIGHT THE STRATEGY CHANGED
+
+**No ink was found. The reason we now understand, and it is not bad luck.**
+
+## THE ONE PARAGRAPH THAT MATTERS
+
+Every search this project has run — cross-energy, differential, the calibrated
+hunt, the silence audit — operated on FROZEN PUBLISHED PROBABILITY MAPS. The
+literature says that does not work: `arXiv 2604.09697` (Apr 2026) shows
+test-time augmentation, the standard "squeeze more from a finished model"
+trick, *frequently hurts* in weak-signal medical imaging, and a search found no
+paper in ANY domain recovering genuinely new weak signal from a frozen map.
+ScrollPrize themselves do not do it; their answer to "squeeze more" is
+retraining with pseudo-labels. **Our zero survivors were the expected result of
+the method, not a fact about the papyrus.**
+
+## WHAT ACTUALLY MAKES LETTERS APPEAR
+
+PHerc. 1667 sat for **two years at 8 µm with zero evidence of letters**. They
+rescanned at **2.4 µm / 78 keV / 0.22 m**, re-unwrapped the same regions, ran
+the **GENERALIST fragment-trained model**, and letters "jumped off the screen"
+— with *"no iterative, scroll-specific labeling"*
+(scrollprize.substack.com/p/finallyletters-in-scroll-4, Dec 2025).
+
+We did the opposite: fine-tuned a scroll-specific model **from
+`PHerc.1667-iteration-5`**, which their own ablation shows is where the
+pseudo-label loop SATURATES. We started at the flat end of the curve.
+
+**We have never run the generalist model.** `scrollprize/PHerc.1667-iteration-0`
+is the cross-segment baseline (trained on 500p2a + 658 + two auto-grown
+segments, NO labels from the target sheet). 319 MB, full inference contract on
+the model card. That is the experiment we still owe.
+
+## THE NEW TOOL — `tools/why_silent.py`
+
+Their July 2026 open-problems doc lists six reasons ink may not appear and then
+says *"we do not always know which part of the pipeline is limiting us"* and
+*"better diagnostics matter just as much as better models."* Nobody has
+published such a diagnostic. This is one. Per sheet, four gates:
+
+| gate | question | basis |
+| --- | --- | --- |
+| PHYSICS | can the scan resolve ink? | collapse beyond ~3.4 µm (Angelotti, *Sci Rep*, Mar 2026) |
+| PROTOCOL | scanned on the recipe? | our measurement, below |
+| DATA | does the surface volume exist? | our measurement, below |
+| DETECTION | did the model commit? | absolute p99, not a relative cutoff |
+
+No GPU, no model, no labels — HEAD requests and the published maps.
+
+### Scroll 1, all 117 sheets
+
+    INK FOUND     105
+    DATA            8      silent because the volume was never written
+    UNRECOVERED     4      good scan, real data, model still silent
+
+**Two thirds of Scroll 1's apparent silences are a DATA artefact**, not ink.
+The four real candidates, by name:
+
+    20260602204401  2.4um  cov 78.3%  p99 139
+    20260603145540  2.4um  cov 82.5%  p99 182
+    20260603185441  2.4um  cov 75.0%  p99 175
+    20260603190005  2.4um  cov 80.0%  p99 175
+
+Caveat kept honest: `20260701183151` (110 Mpx) landed at 69.4% against a 70%
+cut I chose. That is a judgement call sitting on an arbitrary line — re-examine
+it, do not let the threshold decide.
+
+## TWO MEASUREMENTS WORTH SUBMITTING
+
+**1. Scan protocol predicts recovered ink.** Across all 420 published maps:
+
+| recipe | n | median p99 | median confident calls |
+| --- | --- | --- | --- |
+| 2.4 µm / 0.22 m / 78 keV | 80 | 240 | **8.75%** |
+| 2.399 / 0.22 / 78 | 76 | 239 | **7.32%** |
+| 1.129 / 0.22 / **59** | 74 | 231 | **5.63%** |
+| 2.215 / **0.4** / **111** | 47 | 234 | **4.15%** |
+| 7.91 (Scroll 5) | 106 | 229 | 4.38% |
+
+Lead with the WITHIN-SCROLL comparison — PHerc0139/0814/1667 appear in both the
+78 keV and 59 keV rows, same segments: **7.32% vs 5.63%, ~30% more ink from
+78 keV.** The cross-scroll rows are confounded by preservation.
+
+**2. The `-L1` surface volumes are largely unwritten.** Measured by HEAD:
+every Scroll 1 `-L1` checked is **29–37% populated** while its 2.4 µm sibling
+is 71–85%. Any silence measured on an `-L1` volume is confounded.
+
+**3. Scroll 5 model-vs-model.** 53 sheets, two checkpoints on ONE volume, they
+agree on only **38.4%** of each other's calls (×8.6 over a rolled null, 53/53
+significant). Two models on identical input disagree MORE than two different
+energies do on PHerc0139 (58.9%). `out/disagree_0172/`.
+
+## BUGS FOUND IN OUR OWN CODE — BOTH SILENT
+
+**THE tifxyz SENTINEL IS `-1`, NOT `0`.** `(xyz != 0).any(-1)` calls
+`[-1,-1,-1]` VALID. Measured: meshes reporting "100% valid" were 64–70% real;
+90–120k phantom points per segment all stacked at one fake coordinate. The tell
+was `p10 = 0.00` in the winding-gap table — phantoms matching phantoms at
+distance zero. **This corrupted the PHerc0343P adjacency numbers and the
+sandwich test.** Correct test: `~(((xyz==-1).all(-1))|((xyz==0).all(-1)))`.
+Fixed in `render_native.py`; **`find_seams.py` and `sandwich_0343p.py` still
+carry it.**
+
+**NORMALS CANNOT BE TAKEN AT A PATCH RIM.** Central differences straddle the
+zero-fill, du and dv come out parallel, the cross product collapses. Measured:
+**0 of 694 rim cells** had a usable normal vs 20,781 of 22,950 interior. Filter
+on that and you silently empty every boundary — which returned "0 seams" and
+looked like a result. Compute on the interior, diffuse outward.
+
+## OPERATIONAL FACTS THAT COST TIME
+
+- **RunPod's REST v1 never returns `runtime`** — not on `GET /pods/{id}`, and
+  it reads `None` on the list endpoint even for a live pod. The banked lesson
+  "check `runtime`, not `desiredStatus`" **cannot be executed against this
+  API.** Do not conclude "no zombies" from it.
+- **RunPod's HTTP proxy 404s on this account.** A pod whose entire command is
+  `echo HELLO > log.txt && python -m http.server 8000` returns 404 for minutes
+  while RunPod confirms it placed on an RTX 4090. Bisect before blaming your
+  own script — three pods died to my theories before the minimal probe.
+- **Start the log server FIRST in any pod command**, before pip and before the
+  job, or you are blind until the job already finished.
+- **Local CPU inference works**: `~/.ink-venv` (Intel Mac → torch 2.2.2 is the
+  ceiling, so `transformers==4.44.2`, and pin `numpy<2`).
+
+## THE PLAN
+
+1. **Run the generalist** (`iteration-0`) on the 4 UNRECOVERED sheets. Render
+   from level 0, **downsample to 2.4 µm** — do NOT feed 1.129 µm to a model
+   trained at 2.4; receptive fields are in pixels, so the physical footprint
+   halves. Research is explicit that this is unsupported.
+2. **Fix the sentinel bug** in `find_seams.py` / `sandwich_0343p.py`, then
+   re-run — both prior results are void.
+3. **Submit the diagnostic** + the protocol correlation + the `-L1` coverage
+   finding. That is a defensible August entry that needs no new ink.
+
+## STRATEGIC READ
+
+The awards go to GEOMETRY AND LABELS, not viewers — $10k (May 2026) to
+ScrollFiesta, an *external standalone* mesh-topology repair tool; $200k Kaggle
+to nnU-Net for surface detection. A browser viewer cannot mesh, flatten, or
+produce tifxyz. But **the extension point is the `tifxyz` format** — ScrollFiesta
+never touched their C++.
+
+And: **there is no independent methodological audit of Vesuvius ink detection
+anywhere in the literature**, on a pipeline built from human-reviewed
+pseudo-labelling loops. We have the nulls, the controls, and now the gates.
+That is the lane nobody is competing for.
+
+`tools/render_native.py` renders our own surface volumes from level 0 + mesh
+(first in this project) — `--scale 20` = 1.129 µm, `--scale 10` = 2.258 µm
+parity. Physical extent comes from the MESH CROP, not from scale.
 
 ---
 
