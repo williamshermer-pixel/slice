@@ -308,17 +308,23 @@ export default function RecordPage() {
         </p>
       </Section>
 
-      {/* ---- what cannot be fixed ------------------------------------- */}
-      <Section eyebrow="Physics · check this before trusting any scroll" title="Some scans never sampled the ink">
+      {/* ---- the bar this pipeline sets for itself --------------------- */}
+      <Section
+        eyebrow="Physics · the bar this pipeline sets for itself"
+        title="Which scans this project will make claims from"
+      >
         <p>
-          The ink layer is about 15 µm. A feature needs roughly three voxels to
-          be resolved at all. Divide and check before a scroll enters any split:
+          The ink layer is about 15 µm. This project requires roughly three
+          voxels through it before it will trust its own cross-scan
+          measurements. That is a bar on <em className="font-display">our</em>{" "}
+          assertions — not a verdict on the papyrus, and not a claim about what
+          a better method can recover.
         </p>
         <div className="ledger mt-4">
           <Row label="PHerc0172 · 7.91 µm/voxel · 53 segments">
-            1.9 voxels — blind
+            1.9 voxels — under our bar, ink published
           </Row>
-          <Row label="PHerc1447 · 8.64 µm/voxel">1.7 voxels — blind</Row>
+          <Row label="PHerc1447 · 8.64 µm/voxel">1.7 voxels — under our bar</Row>
           <Row label="PHerc0139 / 0814 / 1667 / Paris 4 · 2.258 µm">
             6.6 voxels
           </Row>
@@ -326,11 +332,35 @@ export default function RecordPage() {
             13.3 voxels
           </Row>
         </div>
-        <p className="mt-4 text-ash">
-          On the blind scrolls the ink is not faint — it was never recorded, so
-          no method recovers it from this data. PHerc0172 therefore makes an
-          unusually strong negative control: anything that correlates there is
-          not measuring ink.
+        <p className="mt-4">
+          <strong className="text-ochre">Corrected 2026-08-02.</strong> This
+          section previously called PHerc0172 a &ldquo;strong negative
+          control&rdquo; and said the ink there was never recorded. That was
+          wrong, and{" "}
+          <a
+            className="underline"
+            href="https://github.com/ScrollPrize/villa/pull/1295"
+          >
+            Vesuvius Challenge corrected it on our submission PR
+          </a>
+          : the title of PHerc0172 has been read, and the bucket carries{" "}
+          <strong>53 segments with 106 published ink detections</strong> on that
+          scroll — we counted them.
+        </p>
+        <p className="mt-3 text-ash">
+          What survives is narrower and about our instrument, not the papyrus.
+          At 7.91 µm a ~15 µm ink layer spans 1.9 voxels, under the three this
+          project requires before it will trust its own cross-scan measurements,
+          so PHerc0172 is out of scope <em className="font-display">here</em>.
+          It is not blind. Measured across its published maps: median p99 229
+          and 4.38% confident calls — real ink, at a lower yield than the
+          scrolls scanned on the 0.22 m / 78 keV recipe.
+        </p>
+        <p className="mt-3 text-ash">
+          The general claim was the error. A voxel rule of thumb bounds what{" "}
+          <em className="font-display">this</em> pipeline will assert; it does
+          not bound what a better method can recover, and it should never have
+          been written as though it did.
         </p>
       </Section>
 

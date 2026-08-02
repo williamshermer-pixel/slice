@@ -186,10 +186,16 @@ export type Resolvability = {
  * The ink *layer* is ~15 µm, which at 8.64 µm sampling is 1.7 voxels. You need
  * roughly three to resolve a feature at all.
  *
- * So on every unread scroll the ink is not faint, it is under-sampled: the scan
- * never recorded it. Scroll 1 gets 6.2 voxels through the same layer, which is
- * why that scroll could be read and these cannot. Saying so plainly saves
- * people from hunting a signal that is not in the file.
+ * So a coarse scan under-samples the ink layer, and this project will not make
+ * cross-scan claims from one. Scroll 1 gets 6.2 voxels through the same layer.
+ *
+ * CORRECTED 2026-08-02, after Vesuvius Challenge flagged it on villa PR #1295.
+ * An earlier version of this comment said the ink on those scrolls "was never
+ * recorded" and that they "cannot" be read. That was wrong: PHerc0172 is
+ * sampled at 7.91 um (1.9 voxels) and its title HAS been read, with 53 segments
+ * and 106 published ink detections in the bucket. The three-voxel figure bounds
+ * what THIS pipeline will assert; it does not bound what a better method
+ * recovers. Do not restate it as a fact about the papyrus.
  */
 export function resolvability(voxelUm: number): Resolvability {
   const inkVoxels = HAND.inkLayerUm / voxelUm;
